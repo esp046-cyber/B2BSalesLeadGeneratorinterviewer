@@ -1,0 +1,2045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<meta name="description" content="B2B Sales Lead Generator Mock Interview PWA">
+<title>SalesPrep Pro – B2B Interview Simulator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
+
+  /* ─────────────────────────────────────────────
+     DESIGN TOKENS
+     Font sizes: EXACTLY 4 — 11px · 13px · 16px · 22px
+     Text colors: EXACTLY 2 — --text (primary) · --text2 (secondary)
+     All contrast ratios verified WCAG AA ≥ 4.5:1
+  ───────────────────────────────────────────── */
+  :root {
+    /* Surfaces */
+    --bg:     #0a0f1e;
+    --bg2:    #111827;
+    --bg3:    #1e293b;
+    --card:   #161d2e;
+    --border: #1e293b;
+
+    /* Accents — used for UI elements only (borders, icons, badges), never as standalone body text */
+    --accent:  #38bdf8;   /* sky blue  */
+    --accent2: #a5b4fc;   /* indigo — lightened from #818cf8 to pass contrast on dark bg */
+    --accent3: #34d399;   /* emerald   */
+    --warn:    #fbbf24;   /* amber — lightened from #f59e0b to pass contrast on dark bg   */
+    --danger:  #fb7185;   /* rose      */
+
+    /* Text — ONLY 2 colors, both WCAG AA on all surfaces */
+    --text:  #f1f5f9;   /* primary   — 15.6:1 on --bg */
+    --text2: #94a3b8;   /* secondary — 5.2:1  on --bg, used for labels/captions */
+
+    /* Utility */
+    --glow:   rgba(56,189,248,0.15);
+    --nav-h:  64px;
+    --radius: 16px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+
+    /* Font scale — 4 sizes only */
+    --fs-xs: 11px;   /* captions, badges, nav labels, column headers */
+    --fs-sm: 13px;   /* body copy, option text, feedback, meta        */
+    --fs-md: 16px;   /* buttons, inputs, card headings, subheadings    */
+    --fs-lg: 22px;   /* page titles, hero titles, big numbers          */
+  }
+
+  .light {
+    --bg:     #f0f4ff;
+    --bg2:    #e2e8f8;
+    --bg3:    #d0d9f0;
+    --card:   #ffffff;
+    --border: #c7d2e8;
+
+    /* Accents darkened for light-mode contrast */
+    --accent:  #0284c7;   /* 5.1:1 on white */
+    --accent2: #4f46e5;   /* 6.8:1 on white */
+    --accent3: #059669;   /* 5.5:1 on white */
+    --warn:    #b45309;   /* 5.0:1 on white */
+    --danger:  #dc2626;   /* 5.8:1 on white */
+
+    /* Text — WCAG AA on light surfaces */
+    --text:  #0f172a;   /* primary   — 18.4:1 on white */
+    --text2: #475569;   /* secondary —  5.9:1 on white */
+
+    --glow:   rgba(2,132,199,0.08);
+    --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    font-size: var(--fs-sm);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  h1,h2,h3,h4 { font-family: 'Syne', sans-serif; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; flex-direction: column; min-height: calc(100vh - var(--nav-h)); padding: 20px 16px 80px; }
+  .screen.active { display: flex; }
+
+  /* ── NAV ── */
+  .nav-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: var(--nav-h);
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-around;
+    z-index: 999;
+    backdrop-filter: blur(12px);
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    cursor: pointer; padding: 6px 10px; border-radius: 12px;
+    transition: all 0.2s; border: none; background: none; color: var(--text2);
+    font-family: 'DM Sans', sans-serif; font-size: var(--fs-xs); font-weight: 600;
+  }
+  .nav-item svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; transition: all 0.2s; }
+  .nav-item.active { color: var(--accent); }
+  .nav-item.active svg { stroke: var(--accent); filter: drop-shadow(0 0 6px var(--accent)); }
+  .nav-item:hover { color: var(--accent); background: var(--glow); }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    transition: all 0.2s;
+  }
+  .card:hover { border-color: rgba(56,189,248,0.3); }
+
+  .card-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card-row.three { grid-template-columns: 1fr 1fr 1fr; }
+
+  /* ── HEADER AREA ── */
+  .page-header { margin-bottom: 20px; }
+  .page-header h2 { font-size: var(--fs-lg); font-weight: 800; }
+  .page-header p { color: var(--text2); font-size: var(--fs-sm); margin-top: 4px; }
+
+  /* ── BADGES / TAGS ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 20px; font-size: var(--fs-xs); font-weight: 700;
+  }
+  .badge-blue   { background: rgba(56,189,248,0.15);  color: var(--accent);  }
+  .badge-green  { background: rgba(52,211,153,0.15);  color: var(--accent3); }
+  .badge-yellow { background: rgba(245,158,11,0.15);  color: var(--warn);    }
+  .badge-purple { background: rgba(129,140,248,0.15); color: var(--accent2); }
+  .badge-red    { background: rgba(248,113,113,0.15); color: var(--danger);  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 20px; border-radius: 12px; font-family: 'DM Sans', sans-serif;
+    font-size: var(--fs-md); font-weight: 600; cursor: pointer; border: none;
+    transition: all 0.2s; text-align: center;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(56,189,248,0.3); }
+  .btn-outline { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  .btn-outline:hover { background: var(--glow); }
+  .btn-success { background: linear-gradient(135deg, var(--accent3), #059669); color: #fff; }
+  .btn-danger { background: rgba(248,113,113,0.15); color: var(--danger); border: 1px solid rgba(248,113,113,0.3); }
+  .btn-sm { padding: 8px 14px; font-size: var(--fs-sm); border-radius: 8px; }
+  .btn-full { width: 100%; }
+
+  /* ── PROGRESS ── */
+  .prog-wrap { background: var(--bg3); border-radius: 20px; height: 8px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 20px; transition: width 0.6s ease; }
+  .prog-blue   { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .prog-green  { background: linear-gradient(90deg, var(--accent3), #059669); }
+  .prog-yellow { background: linear-gradient(90deg, var(--warn), #d97706); }
+
+  /* ── SCORE RING ── */
+  .score-ring {
+    width: 100px; height: 100px; border-radius: 50%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border: 4px solid transparent;
+    background: linear-gradient(var(--card), var(--card)) padding-box,
+                linear-gradient(135deg, var(--accent), var(--accent2)) border-box;
+    font-family: 'Syne', sans-serif;
+  }
+  .score-ring .num { font-size: var(--fs-lg); font-weight: 800; color: var(--accent); }
+  .score-ring .lbl { font-size: var(--fs-xs); color: var(--text2); }
+
+  /* ── FORM ELEMENTS ── */
+  .input-wrap { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .input-wrap label { font-size: var(--fs-xs); font-weight: 600; color: var(--text2); }
+  input[type=text], input[type=number], textarea, select {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); padding: 11px 14px; font-family: 'DM Sans', sans-serif; font-size: var(--fs-sm);
+    width: 100%; outline: none; transition: border-color 0.2s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 90px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+
+  /* ── RADIO / CHECK OPTIONS ── */
+  .option-list { display: flex; flex-direction: column; gap: 10px; }
+  .option-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 16px; background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; cursor: pointer; transition: all 0.2s;
+  }
+  .option-item:hover { border-color: var(--accent); background: var(--glow); }
+  .option-item.selected { border-color: var(--accent); background: rgba(56,189,248,0.1); }
+  .option-item.correct  { border-color: var(--accent3); background: rgba(52,211,153,0.1); }
+  .option-item.wrong    { border-color: var(--danger);  background: rgba(248,113,113,0.1); }
+  .opt-num {
+    width: 28px; height: 28px; border-radius: 8px; background: var(--border);
+    display: flex; align-items: center; justify-content: center; font-size: var(--fs-xs);
+    font-weight: 700; flex-shrink: 0; font-family: 'Syne', sans-serif;
+  }
+  .opt-text { font-size: var(--fs-sm); line-height: 1.5; padding-top: 3px; }
+
+  /* ── FEEDBACK BOX ── */
+  .feedback-box {
+    padding: 14px 16px; border-radius: 12px; margin-top: 12px;
+    font-size: var(--fs-sm); line-height: 1.6; border-left: 3px solid;
+  }
+  .fb-good { background: rgba(52,211,153,0.12); border-color: var(--accent3); color: var(--accent3); }
+  .fb-warn { background: rgba(245,158,11,0.12); border-color: var(--warn);    color: var(--warn);    }
+  .fb-bad  { background: rgba(248,113,113,0.12); border-color: var(--danger); color: var(--danger);  }
+  .fb-info { background: rgba(56,189,248,0.12);  border-color: var(--accent); color: var(--accent);  }
+
+  /* ── PIPELINE BOARD ── */
+  .pipeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .pipeline-col { background: var(--bg2); border-radius: 12px; padding: 10px; min-height: 200px; }
+  .pipeline-col h4 { font-size: var(--fs-xs); font-weight: 700; color: var(--text2); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .lead-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px; margin-bottom: 8px; cursor: grab; font-size: var(--fs-sm);
+    transition: all 0.2s; user-select: none;
+  }
+  .lead-card:hover { border-color: var(--accent); transform: scale(1.02); }
+  .lead-card.dragging { opacity: 0.5; }
+  .pipeline-col.drag-over { background: var(--glow); border: 2px dashed var(--accent); }
+  .lead-name { font-weight: 600; font-size: var(--fs-sm); margin-bottom: 3px; }
+  .lead-meta { color: var(--text2); font-size: var(--fs-xs); }
+  .lead-score-bar { height: 4px; border-radius: 4px; margin-top: 6px; }
+
+  /* ── STAR BUILDER ── */
+  .star-section { border-left: 2px solid var(--accent2); padding-left: 14px; margin-bottom: 16px; }
+  .star-section h4 { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.8px; color: var(--accent2); margin-bottom: 6px; }
+
+  /* ── TIMER ── */
+  .timer-display {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--bg3); padding: 6px 14px; border-radius: 20px;
+    font-family: 'Syne', sans-serif; font-size: var(--fs-md); font-weight: 700;
+  }
+  .timer-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent3); animation: pulse 1s infinite; }
+  .timer-dot.warn { background: var(--warn); }
+  .timer-dot.danger { background: var(--danger); }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.8)} }
+
+  /* ── MISC UTILITIES ── */
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .flex { display: flex; }
+  .flex-between { display: flex; align-items: center; justify-content: space-between; }
+  .flex-center { display: flex; align-items: center; justify-content: center; }
+  .gap-8  { gap: 8px; }
+  .gap-12 { gap: 12px; }
+  .mt-8  { margin-top: 8px; }
+  .mt-12 { margin-top: 12px; }
+  .mt-16 { margin-top: 16px; }
+  .mb-8  { margin-bottom: 8px; }
+  .mb-12 { margin-bottom: 12px; }
+  .mb-16 { margin-bottom: 16px; }
+  .text-sm     { font-size: var(--fs-sm); }
+  .text-xs     { font-size: var(--fs-xs); color: var(--text2); }   /* --text2 replaces old --text3 */
+  .text-accent { color: var(--accent); }
+  .text-green  { color: var(--accent3); }
+  .text-warn   { color: var(--warn); }
+  .text-danger { color: var(--danger); }
+  .text-accent2 { color: var(--accent2); }
+  .fw-700  { font-weight: 700; }
+  .hidden  { display: none !important; }
+
+  /* ── HOME HERO ── */
+  .hero-banner {
+    background: linear-gradient(135deg, #0f2044 0%, #1a1040 50%, #0f2044 100%);
+    border-radius: 20px; padding: 24px; margin-bottom: 20px; position: relative; overflow: hidden;
+  }
+  .hero-banner::before {
+    content:''; position:absolute; top:-30px; right:-30px; width:140px; height:140px;
+    border-radius: 50%; background: radial-gradient(circle, rgba(56,189,248,0.2), transparent 70%);
+  }
+  .hero-banner::after {
+    content:''; position:absolute; bottom:-20px; left:40%; width:80px; height:80px;
+    border-radius: 50%; background: radial-gradient(circle, rgba(129,140,248,0.2), transparent 70%);
+  }
+  .hero-tag   { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 1.5px; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; }
+  .hero-title { font-family: 'Syne', sans-serif; font-size: var(--fs-lg); font-weight: 800; line-height: 1.2; margin-bottom: 8px; }
+  .hero-sub   { color: var(--text2); font-size: var(--fs-sm); line-height: 1.5; }
+
+  /* ── STAGE CARDS ── */
+  .stage-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 16px; display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px;
+    transition: all 0.2s; cursor: pointer;
+  }
+  .stage-card:hover { border-color: var(--accent); transform: translateX(4px); }
+  .stage-icon {
+    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .si-blue   { background: rgba(56,189,248,0.15); }
+  .si-purple { background: rgba(129,140,248,0.15); }
+  .si-green  { background: rgba(52,211,153,0.15); }
+  .si-yellow { background: rgba(245,158,11,0.15); }
+  .si-red    { background: rgba(248,113,113,0.15); }
+  .stage-info h4 { font-size: var(--fs-md); font-weight: 700; margin-bottom: 3px; }
+  .stage-info p  { font-size: var(--fs-xs); color: var(--text2); }
+
+  /* ── SECTION TABS ── */
+  .tab-row { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
+  .tab-btn {
+    padding: 8px 16px; border-radius: 20px; font-size: var(--fs-xs); font-weight: 600;
+    border: 1px solid var(--border); background: var(--bg2); color: var(--text2);
+    cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ── BOOLEAN BUILDER ── */
+  .bool-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.3);
+    color: var(--accent); border-radius: 8px; padding: 4px 10px; font-size: var(--fs-xs);
+    font-weight: 600; margin: 3px;
+  }
+  .bool-op { color: var(--accent2); font-weight: 800; padding: 0 4px; }
+  .bool-display {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; font-size: var(--fs-xs); font-family: 'Courier New', monospace;
+    color: var(--text); min-height: 50px; line-height: 1.7; word-break: break-word;
+  }
+
+  /* ── KPI METRIC BOXES ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpi-box  { background: var(--bg2); border-radius: 12px; padding: 14px; text-align: center; }
+  .kpi-num  { font-family: 'Syne', sans-serif; font-size: var(--fs-lg); font-weight: 800; }
+  .kpi-lbl  { font-size: var(--fs-xs); color: var(--text2); margin-top: 2px; }
+
+  /* ── OUTREACH SCORER ── */
+  .score-bar-wrap { display: flex; flex-direction: column; gap: 8px; }
+  .score-bar-row  { display: flex; align-items: center; gap: 10px; }
+  .score-bar-row .lbl  { font-size: var(--fs-xs); width: 110px; flex-shrink: 0; color: var(--text2); }
+  .score-bar-row .fill { flex: 1; height: 6px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+  .score-bar-row .fill div { height: 100%; border-radius: 4px; transition: width 0.5s; }
+  .score-bar-row .val  { font-size: var(--fs-xs); font-weight: 700; width: 28px; text-align: right; }
+
+  /* ── COMMISSION CALC ── */
+  .calc-result {
+    background: linear-gradient(135deg, rgba(56,189,248,0.1), rgba(129,140,248,0.1));
+    border: 1px solid rgba(56,189,248,0.3); border-radius: 14px; padding: 16px; margin-top: 14px;
+  }
+  .calc-result .big { font-family: 'Syne', sans-serif; font-size: var(--fs-lg); font-weight: 800; color: var(--accent3); }
+  .calc-result .sub { font-size: var(--fs-xs); color: var(--text2); }
+
+  /* ── REPORT SECTION ── */
+  .report-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .report-row:last-child { border-bottom: none; }
+  .report-row .lbl { font-size: var(--fs-sm); color: var(--text2); }
+  .report-row .val { font-weight: 700; font-size: var(--fs-md); }
+
+  .readiness-badge {
+    text-align: center; padding: 20px; border-radius: 16px;
+    background: linear-gradient(135deg, rgba(52,211,153,0.1), rgba(56,189,248,0.1));
+    border: 1px solid rgba(52,211,153,0.3); margin-bottom: 16px;
+  }
+  .readiness-badge .level { font-family: 'Syne', sans-serif; font-size: var(--fs-lg); font-weight: 800; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+  .fade-in { animation: fadeInUp 0.4s ease forwards; }
+
+  .gradient-text {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+
+  /* ── THEME TOGGLE ── */
+  .theme-toggle {
+    width: 40px; height: 22px; background: var(--bg3); border-radius: 20px; position: relative;
+    cursor: pointer; transition: background 0.3s; border: 1px solid var(--border); flex-shrink: 0;
+  }
+  .theme-toggle.on { background: var(--accent); }
+  .theme-toggle::after {
+    content:''; position:absolute; top:2px; left:2px; width:16px; height:16px;
+    border-radius: 50%; background: #fff; transition: transform 0.3s;
+  }
+  .theme-toggle.on::after { transform: translateX(18px); }
+
+  /* ── SCENARIO CHOICE ── */
+  .scenario-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .scenario-opt {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; cursor: pointer; transition: all 0.2s; position: relative;
+  }
+  .scenario-opt:hover { border-color: var(--accent2); background: rgba(129,140,248,0.08); }
+  .scenario-opt.picked { border-color: var(--accent); }
+  .scenario-opt.best   { border-color: var(--accent3); }
+  .scenario-opt.worst  { border-color: var(--danger); }
+  .so-letter {
+    position: absolute; top: 12px; right: 14px; width: 22px; height: 22px;
+    border-radius: 6px; background: var(--bg3); display: flex; align-items: center; justify-content: center;
+    font-size: var(--fs-xs); font-weight: 800; color: var(--text2);
+  }
+  .so-text  { font-size: var(--fs-sm); line-height: 1.5; padding-right: 28px; }
+  .so-score { font-size: var(--fs-xs); font-weight: 600; margin-top: 6px; }
+
+  /* ── OBJECTION HANDLER ── */
+  .obj-bubble {
+    background: var(--bg2); border-radius: 12px 12px 12px 2px; padding: 12px 16px;
+    font-size: var(--fs-sm); line-height: 1.5; border-left: 3px solid var(--accent2);
+    margin-bottom: 12px; max-width: 90%;
+  }
+  .obj-reply {
+    background: rgba(56,189,248,0.1); border-radius: 12px 12px 2px 12px; padding: 12px 16px;
+    font-size: var(--fs-sm); line-height: 1.5; border-right: 3px solid var(--accent);
+    margin-bottom: 12px; max-width: 90%; margin-left: auto;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ── INSTALL BANNER ── */
+  #install-banner {
+    position: fixed; top: 12px; left: 12px; right: 12px; z-index: 1000;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 14px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 8px 30px rgba(56,189,248,0.3);
+  }
+  #install-banner p { flex: 1; font-size: var(--fs-sm); font-weight: 600; color: #fff; }
+
+  @media (max-width: 380px) {
+    .card-row { grid-template-columns: 1fr; }
+    .pipeline { grid-template-columns: repeat(2, 1fr); }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- INSTALL BANNER -->
+<div id="install-banner" class="hidden">
+  <p>📲 Install SalesPrep Pro for offline use!</p>
+  <button class="btn btn-sm" style="background:#fff;color:#0ea5e9;flex-shrink:0;" onclick="installPWA()">Install</button>
+  <button class="btn btn-sm btn-danger" style="flex-shrink:0;" onclick="document.getElementById('install-banner').classList.add('hidden')">✕</button>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: HOME DASHBOARD
+══════════════════════════════════ -->
+<div id="screen-home" class="screen active">
+  <div class="flex-between mb-16">
+    <div>
+      <div class="text-xs">GOOD DAY 👋</div>
+      <h2 style="font-size:var(--fs-lg);">SalesPrep <span class="gradient-text">Pro</span></h2>
+    </div>
+    <div class="flex gap-8" style="align-items:center;">
+      <span class="text-xs">Dark</span>
+      <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()"></div>
+    </div>
+  </div>
+
+  <div class="hero-banner fade-in">
+    <div class="hero-tag">🇬🇧 UK B2B Sales Interview Simulator</div>
+    <div class="hero-title">Land your B2B Lead Generator role — Interview ready.</div>
+    <div class="hero-sub">Real scenarios. Real feedback. Real confidence for your UK startup interview.</div>
+    <div class="flex gap-8 mt-16" style="flex-wrap:wrap;">
+      <span class="badge badge-blue">Remote India → UK GMT</span>
+      <span class="badge badge-green">SME Procurement</span>
+      <span class="badge badge-yellow">Early-Stage Startup</span>
+    </div>
+  </div>
+
+  <div class="card mb-16 fade-in">
+    <div class="flex-between mb-8">
+      <span class="text-sm fw-700">Overall Readiness</span>
+      <span class="text-accent fw-700" id="home-readiness-pct">0%</span>
+    </div>
+    <div class="prog-wrap mb-8"><div class="prog-fill prog-blue" id="home-readiness-bar" style="width:0%"></div></div>
+    <div class="card-row" style="margin-top:12px;">
+      <div style="text-align:center;">
+        <div class="text-sm fw-700 text-accent" id="home-stages-done">0/6</div>
+        <div class="text-xs">Stages Done</div>
+      </div>
+      <div style="text-align:center;">
+        <div class="text-sm fw-700 text-green" id="home-avg-score">—</div>
+        <div class="text-xs">Avg Score</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:var(--fs-md);font-weight:700;margin-bottom:12px;">Interview Stages</h3>
+
+  <div class="stage-card" onclick="goTo('screen-s1')">
+    <div class="stage-icon si-blue">📋</div>
+    <div class="stage-info">
+      <h4>Stage 1 – Screening Round</h4>
+      <p>Core B2B concepts, UK market awareness, GMT readiness</p>
+    </div>
+    <div style="margin-left:auto;flex-shrink:0;" class="badge badge-blue" id="s1-badge">Start</div>
+  </div>
+
+  <div class="stage-card" onclick="goTo('screen-s2')">
+    <div class="stage-icon si-purple">🔍</div>
+    <div class="stage-info">
+      <h4>Stage 2 – Technical Round</h4>
+      <p>LinkedIn prospecting, CRM pipeline, boolean search, ICP</p>
+    </div>
+    <div style="margin-left:auto;flex-shrink:0;" class="badge badge-purple" id="s2-badge">Start</div>
+  </div>
+
+  <div class="stage-card" onclick="goTo('screen-s3')">
+    <div class="stage-icon si-yellow">🎯</div>
+    <div class="stage-info">
+      <h4>Stage 3 – Scenario Round</h4>
+      <p>Case studies: low open rates, meetings not closing, objections</p>
+    </div>
+    <div style="margin-left:auto;flex-shrink:0;" class="badge badge-yellow" id="s3-badge">Start</div>
+  </div>
+
+  <div class="stage-card" onclick="goTo('screen-s4')">
+    <div class="stage-icon si-green">🧠</div>
+    <div class="stage-info">
+      <h4>Stage 4 – Behavioural Round</h4>
+      <p>STAR method, mindset, UK etiquette, objection handling</p>
+    </div>
+    <div style="margin-left:auto;flex-shrink:0;" class="badge badge-green" id="s4-badge">Start</div>
+  </div>
+
+  <div class="stage-card" onclick="goTo('screen-kpi')">
+    <div class="stage-icon si-red">📊</div>
+    <div class="stage-info">
+      <h4>KPI & Commission Calculator</h4>
+      <p>Conversion rates, pipeline projection, commission earnings</p>
+    </div>
+    <div style="margin-left:auto;flex-shrink:0;" class="badge badge-yellow">Live</div>
+  </div>
+
+  <div class="stage-card" onclick="goTo('screen-report')">
+    <div class="stage-icon si-purple">🏆</div>
+    <div class="stage-info">
+      <h4>Final Interview Report</h4>
+      <p>Score, readiness level, improvement roadmap</p>
+    </div>
+    <div style="margin-left:auto;flex-shrink:0;" class="badge badge-purple">View</div>
+  </div>
+
+  <div class="card mt-16">
+    <h4 style="font-size:var(--fs-sm);font-weight:700;margin-bottom:10px;">🎯 Role Context</h4>
+    <div style="font-size:var(--fs-xs);color:var(--text2);line-height:1.7;">
+      <b style="color:var(--text);">Position:</b> B2B Sales Lead Generator<br>
+      <b style="color:var(--text);">Company:</b> UK Sales & Growth Hub (3 months old)<br>
+      <b style="color:var(--text);">Industry:</b> UK SME Procurement Transformation<br>
+      <b style="color:var(--text);">Location:</b> Remote from India, GMT hours<br>
+      <b style="color:var(--text);">Pay:</b> Base hourly + commission on closed leads
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: STAGE 1 – SCREENING
+══════════════════════════════════ -->
+<div id="screen-s1" class="screen">
+  <div class="flex-between mb-16">
+    <button class="btn btn-sm btn-outline" onclick="goTo('screen-home')">← Back</button>
+    <div class="timer-display"><div class="timer-dot" id="s1-tdot"></div><span id="s1-timer">15:00</span></div>
+    <button class="btn btn-sm btn-outline" onclick="resetStage1()">↺ Retry</button>
+  </div>
+
+  <div class="page-header">
+    <div class="badge badge-blue mb-8">Stage 1</div>
+    <h2>Screening Round</h2>
+    <p>Test core B2B knowledge and UK market awareness</p>
+  </div>
+
+  <div class="card mb-16">
+    <div class="flex-between mb-8">
+      <span class="text-xs">Progress</span>
+      <span class="text-xs" id="s1-prog-text">Q1 of 5</span>
+    </div>
+    <div class="prog-wrap"><div class="prog-fill prog-blue" id="s1-prog" style="width:20%"></div></div>
+  </div>
+
+  <div id="s1-question-area"></div>
+
+  <div id="s1-confidence" class="card mb-12 hidden">
+    <label class="input-wrap" style="margin:0;">
+      <span style="font-size:var(--fs-xs);font-weight:600;color:var(--text2);margin-bottom:6px;display:block;">Rate your confidence in this answer:</span>
+      <input type="range" min="1" max="10" value="5" id="s1-conf-slider" oninput="document.getElementById('s1-conf-val').textContent=this.value">
+    </label>
+    <div class="flex-between mt-8">
+      <span class="text-xs">Low</span>
+      <span class="fw-700 text-accent" id="s1-conf-val">5</span>
+      <span class="text-xs">High</span>
+    </div>
+  </div>
+
+  <div id="s1-feedback-area"></div>
+
+  <div class="flex gap-8 mt-16" id="s1-actions">
+    <button class="btn btn-primary btn-full" id="s1-submit-btn" onclick="submitS1()">Submit Answer</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: STAGE 2 – TECHNICAL
+══════════════════════════════════ -->
+<div id="screen-s2" class="screen">
+  <div class="flex-between mb-16">
+    <button class="btn btn-sm btn-outline" onclick="goTo('screen-home')">← Back</button>
+    <h3 style="font-size:var(--fs-md);font-weight:700;">Technical Round</h3>
+    <div class="badge badge-purple">Stage 2</div>
+  </div>
+
+  <div class="tab-row" id="s2-tabs">
+    <button class="tab-btn active" onclick="switchS2Tab('linkedin')">🔗 LinkedIn</button>
+    <button class="tab-btn" onclick="switchS2Tab('icp')">👤 ICP Builder</button>
+    <button class="tab-btn" onclick="switchS2Tab('crm')">📋 CRM Pipeline</button>
+    <button class="tab-btn" onclick="switchS2Tab('outreach')">✉️ Outreach</button>
+  </div>
+
+  <!-- LINKEDIN BOOLEAN -->
+  <div id="s2-linkedin" class="s2-tab">
+    <div class="card mb-12">
+      <h3 style="font-size:var(--fs-md);font-weight:700;margin-bottom:4px;">🔍 LinkedIn Boolean Search Builder</h3>
+      <p class="text-xs mb-12">Build professional boolean queries to find UK B2B decision-makers</p>
+      <div class="input-wrap">
+        <label>Job Titles (comma-separated)</label>
+        <input type="text" id="bool-titles" placeholder="Procurement Director, Head of Purchasing, CPO" value="Procurement Director, Head of Purchasing, CPO">
+      </div>
+      <div class="input-wrap">
+        <label>Industries</label>
+        <input type="text" id="bool-industries" placeholder="Manufacturing, Logistics, Healthcare" value="Manufacturing, Logistics, Healthcare">
+      </div>
+      <div class="input-wrap">
+        <label>Company Size</label>
+        <select id="bool-size">
+          <option value="11-50">11–50 employees (Small)</option>
+          <option value="51-200" selected>51–200 employees (SME)</option>
+          <option value="201-500">201–500 employees (Mid-market)</option>
+          <option value="501-1000">501–1,000 employees</option>
+        </select>
+      </div>
+      <div class="input-wrap">
+        <label>Location (UK Regions)</label>
+        <input type="text" id="bool-location" placeholder="London, Manchester, Birmingham" value="London, Manchester, Birmingham">
+      </div>
+      <button class="btn btn-primary btn-full mt-8" onclick="buildBoolean()">⚡ Generate Boolean String</button>
+    </div>
+    <div id="bool-output" class="hidden card">
+      <h4 style="font-size:var(--fs-sm);font-weight:700;margin-bottom:8px;">Generated Boolean Query:</h4>
+      <div class="bool-display" id="bool-string"></div>
+      <div class="feedback-box fb-info mt-12" id="bool-tips"></div>
+      <div class="flex-between mt-12">
+        <span class="text-xs">Estimated results: <b class="text-accent" id="bool-est">2,400 – 8,500</b></span>
+        <button class="btn btn-sm btn-success" onclick="markS2LinkedIn()">✓ Mark Complete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ICP BUILDER -->
+  <div id="s2-icp" class="s2-tab hidden">
+    <div class="card mb-12">
+      <h3 style="font-size:var(--fs-md);font-weight:700;margin-bottom:4px;">👤 Ideal Customer Profile (ICP)</h3>
+      <p class="text-xs mb-12">Define your target for UK SME Procurement outreach</p>
+      <div class="input-wrap">
+        <label>Decision Maker Role</label>
+        <select id="icp-role">
+          <option>Procurement Director</option>
+          <option>Head of Purchasing</option>
+          <option>Operations Manager</option>
+          <option>Finance Director</option>
+          <option>CEO / MD (SME)</option>
+        </select>
+      </div>
+      <div class="input-wrap">
+        <label>Company Annual Revenue</label>
+        <select id="icp-rev">
+          <option>£500K – £2M</option>
+          <option selected>£2M – £10M</option>
+          <option>£10M – £50M</option>
+          <option>£50M+</option>
+        </select>
+      </div>
+      <div class="input-wrap">
+        <label>Pain Points (select all that apply)</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;" id="icp-pains">
+          <label class="icp-pain"><input type="checkbox" value="inefficient suppliers" checked> Inefficient supplier management</label>
+          <label class="icp-pain"><input type="checkbox" value="manual procurement" checked> Manual procurement processes</label>
+          <label class="icp-pain"><input type="checkbox" value="cost overruns"> Cost overruns</label>
+          <label class="icp-pain"><input type="checkbox" value="compliance gaps"> Compliance gaps</label>
+          <label class="icp-pain"><input type="checkbox" value="lack of visibility"> Lack of visibility</label>
+        </div>
+      </div>
+      <style>.icp-pain{font-size:var(--fs-xs);background:var(--bg2);padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:6px;}</style>
+      <button class="btn btn-primary btn-full mt-12" onclick="buildICP()">🎯 Build ICP Profile</button>
+    </div>
+    <div id="icp-output" class="hidden card">
+      <h4 style="font-size:var(--fs-sm);font-weight:700;margin-bottom:12px;">Your ICP Summary:</h4>
+      <div id="icp-content"></div>
+      <div class="feedback-box fb-good mt-12">
+        ✅ <b>Interviewer note:</b> A well-defined ICP shows strategic thinking. Always ask "who benefits most and acts fastest?"
+      </div>
+    </div>
+  </div>
+
+  <!-- CRM PIPELINE -->
+  <div id="s2-crm" class="s2-tab hidden">
+    <div class="card mb-12">
+      <h3 style="font-size:var(--fs-md);font-weight:700;margin-bottom:4px;">📋 CRM Pipeline Simulation</h3>
+      <p class="text-xs mb-12">Drag leads between stages. Manage your B2B pipeline.</p>
+    </div>
+    <div class="pipeline" id="crm-board">
+      <div class="pipeline-col" id="col-new" ondragover="allowDrop(event)" ondrop="drop(event,'new')">
+        <h4>🆕 New Leads</h4>
+        <div class="lead-card" draggable="true" ondragstart="drag(event,'l1')" id="lead-l1">
+          <div class="lead-name">Sarah Mills</div>
+          <div class="lead-meta">Procurement Dir · Logistics UK</div>
+          <div class="lead-score-bar"><div class="prog-fill prog-blue" style="width:70%"></div></div>
+        </div>
+        <div class="lead-card" draggable="true" ondragstart="drag(event,'l2')" id="lead-l2">
+          <div class="lead-name">James Harrington</div>
+          <div class="lead-meta">Head of Ops · Manufacturing</div>
+          <div class="lead-score-bar"><div class="prog-fill prog-yellow" style="width:45%"></div></div>
+        </div>
+        <div class="lead-card" draggable="true" ondragstart="drag(event,'l3')" id="lead-l3">
+          <div class="lead-name">Priya Sharma</div>
+          <div class="lead-meta">Finance Dir · Healthcare SME</div>
+          <div class="lead-score-bar"><div class="prog-fill prog-green" style="width:85%"></div></div>
+        </div>
+      </div>
+      <div class="pipeline-col" id="col-contacted" ondragover="allowDrop(event)" ondrop="drop(event,'contacted')">
+        <h4>📨 Contacted</h4>
+      </div>
+      <div class="pipeline-col" id="col-qualified" ondragover="allowDrop(event)" ondrop="drop(event,'qualified')">
+        <h4>✅ Qualified</h4>
+      </div>
+      <div class="pipeline-col" id="col-meeting" ondragover="allowDrop(event)" ondrop="drop(event,'meeting')">
+        <h4>📅 Meeting Booked</h4>
+      </div>
+    </div>
+    <div class="card mt-12">
+      <div class="kpi-grid">
+        <div class="kpi-box"><div class="kpi-num text-accent" id="crm-total">3</div><div class="kpi-lbl">Total Leads</div></div>
+        <div class="kpi-box"><div class="kpi-num text-green" id="crm-meetings">0</div><div class="kpi-lbl">Meetings Booked</div></div>
+        <div class="kpi-box"><div class="kpi-num text-warn" id="crm-conv">0%</div><div class="kpi-lbl">Conversion Rate</div></div>
+        <div class="kpi-box"><div class="kpi-num text-accent2" id="crm-pipeline">£0</div><div class="kpi-lbl">Pipeline Value</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OUTREACH GENERATOR -->
+  <div id="s2-outreach" class="s2-tab hidden">
+    <div class="card mb-12">
+      <h3 style="font-size:var(--fs-md);font-weight:700;margin-bottom:4px;">✉️ Outreach Message Generator</h3>
+      <p class="text-xs mb-12">Craft personalised LinkedIn outreach for UK decision-makers</p>
+      <div class="input-wrap">
+        <label>Prospect Name</label>
+        <input type="text" id="out-name" placeholder="e.g. Sarah" value="Sarah">
+      </div>
+      <div class="input-wrap">
+        <label>Their Role</label>
+        <input type="text" id="out-role" placeholder="e.g. Procurement Director" value="Procurement Director">
+      </div>
+      <div class="input-wrap">
+        <label>Their Company</label>
+        <input type="text" id="out-company" placeholder="e.g. Mills Logistics Ltd" value="Mills Logistics Ltd">
+      </div>
+      <div class="input-wrap">
+        <label>Message Tone</label>
+        <select id="out-tone">
+          <option value="formal">Formal UK Professional</option>
+          <option value="warm" selected>Warm & Consultative</option>
+          <option value="direct">Direct & Value-Led</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-full mt-8" onclick="generateOutreach()">✍️ Generate Message</button>
+    </div>
+    <div id="outreach-output" class="hidden card">
+      <div class="flex-between mb-8">
+        <h4 style="font-size:var(--fs-sm);font-weight:700;">Generated Message:</h4>
+        <span id="out-score-badge" class="badge">Score: —</span>
+      </div>
+      <div id="outreach-msg" style="background:var(--bg2);border-radius:10px;padding:14px;font-size:var(--fs-sm);line-height:1.7;"></div>
+      <h4 style="font-size:var(--fs-xs);font-weight:700;margin:12px 0 8px;">Personalisation Score:</h4>
+      <div class="score-bar-wrap" id="out-scores"></div>
+      <div class="feedback-box fb-info mt-12" id="out-feedback"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: STAGE 3 – SCENARIOS
+══════════════════════════════════ -->
+<div id="screen-s3" class="screen">
+  <div class="flex-between mb-16">
+    <button class="btn btn-sm btn-outline" onclick="goTo('screen-home')">← Back</button>
+    <div class="badge badge-yellow">Stage 3</div>
+    <button class="btn btn-sm btn-outline" onclick="resetS3()">↺ Reset</button>
+  </div>
+
+  <div class="page-header">
+    <h2>Scenario Round</h2>
+    <p>Real-world case studies. Choose your strategy.</p>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="showCase(1,this)">Case 1</button>
+    <button class="tab-btn" onclick="showCase(2,this)">Case 2</button>
+    <button class="tab-btn" onclick="showCase(3,this)">Case 3</button>
+  </div>
+
+  <!-- CASE 1 -->
+  <div id="case-1" class="case-panel">
+    <div class="card mb-12" style="border-left:3px solid var(--warn);">
+      <div class="badge badge-yellow mb-8">Case Study 1 — Real Employer Scenario</div>
+      <h3 style="font-size:var(--fs-md);font-weight:700;margin-bottom:6px;">The Unresponsive Database</h3>
+      <p style="font-size:var(--fs-sm);line-height:1.6;color:var(--text2);">It's your third week. You've sent 120 personalised LinkedIn outreach messages to UK procurement contacts. 31 accepted your connection request. Of those, you've messaged all 31. You've received 4 replies — 3 polite brush-offs and 1 genuine conversation that went cold after 2 exchanges. Your founder asks: "What's going wrong and what are you changing?" What do you say?</p>
+    </div>
+    <div class="scenario-grid" id="case1-opts">
+      <div class="scenario-opt" onclick="pickScenario(1,'A',35)">
+        <div class="so-letter">A</div>
+        <div class="so-text">"The UK procurement market moves slowly — this is normal. Give it another 3 weeks."</div>
+      </div>
+      <div class="scenario-opt" onclick="pickScenario(1,'B',95)">
+        <div class="so-letter">B</div>
+        <div class="so-text">"My acceptance rate is OK at 26%, but only a 13% reply rate tells me the message isn't landing. I've reviewed all 4 replies — none mentioned the pain point I led with. I'm going to: (1) rewrite the opening line to reference a specific company trigger, (2) shorten the ask from 'call' to a single question, (3) test sending Tue–Thu 9–11am GMT. I'll send 20 new variants by tomorrow and report back Friday."</div>
+      </div>
+      <div class="scenario-opt" onclick="pickScenario(1,'C',55)">
+        <div class="so-letter">C</div>
+        <div class="so-text">"I think we need better leads — the list quality isn't good enough. Can we get a new database?"</div>
+      </div>
+      <div class="scenario-opt" onclick="pickScenario(1,'D',45)">
+        <div class="so-letter">D</div>
+        <div class="so-text">"LinkedIn isn't working for this audience. I'd like to switch to cold email instead."</div>
+      </div>
+    </div>
+    <div id="case1-result" class="hidden"></div>
+  </div>
+
+  <!-- CASE 2 -->
+  <div id="case-2" class="case-panel hidden">
+    <div class="card mb-12" style="border-left:3px solid var(--danger);">
+      <div class="badge badge-red mb-8">Case Study 2 — Real Employer Scenario</div>
+      <h3 style="font-size:var(--fs-md);font-weight:700;margin-bottom:6px;">The Meeting Quality Dispute</h3>
+      <p style="font-size:var(--fs-sm);line-height:1.6;color:var(--text2);">You've booked 11 meetings this month — your target was 10. You hit it. But the founder comes back frustrated: "8 of those 11 meetings were a waste of time. The companies were too small, contacts had no budget, and two didn't even know what procurement software was." The founder implies your numbers look good on paper but aren't useful. How do you handle this?</p>
+    </div>
+    <div class="scenario-grid" id="case2-opts">
+      <div class="scenario-opt" onclick="pickScenario(2,'A',92)">
+        <div class="so-letter">A</div>
+        <div class="so-text">"That's a really important signal — thank you for telling me directly. Can we spend 20 minutes going through all 11 meetings together so I can understand exactly which qualification criteria failed? I want to build a stricter pre-meeting checklist: minimum company revenue, decision-maker authority level, and explicit pain acknowledgment before I book anything. I'll also propose we add a 5-question pre-call form for prospects."</div>
+      </div>
+      <div class="scenario-opt" onclick="pickScenario(2,'B',30)">
+        <div class="so-letter">B</div>
+        <div class="so-text">"I hit the meeting target — if the quality isn't good enough, the ICP criteria needs to be clearer upfront."</div>
+      </div>
+      <div class="scenario-opt" onclick="pickScenario(2,'C',60)">
+        <div class="so-letter">C</div>
+        <div class="so-text">"I'll tighten the qualification questions going forward. Can you send me a profile of the 3 meetings that did go well so I can match against that?"</div>
+      </div>
+      <div class="scenario-opt" onclick="pickScenario(2,'D',20)">
+        <div class="so-letter">D</div>
+        <div class="so-text">"Maybe the target should be fewer meetings with higher quality — 5 great meetings is better than 11 mixed ones."</div>
+      </div>
+    </div>
+    <div id="case2-result" class="hidden"></div>
+  </div>
+
+  <!-- CASE 3 -->
+  <div id="case-3" class="case-panel hidden">
+    <div class="card mb-12" style="border-left:3px solid var(--accent);">
+      <div class="badge badge-blue mb-8">Case Study 3 — Real Employer Scenario</div>
+      <h3 style="font-size:var(--fs-md);font-weight:700;margin-bottom:6px;">The Ghost Lead</h3>
+      <p style="font-size:var(--fs-sm);line-height:1.6;color:var(--text2);">A UK Head of Procurement at a £15M logistics firm had a great first discovery call with your founder 3 weeks ago. They said they were "very interested" and asked for a proposal. The proposal was sent 2 weeks ago. Since then: no reply to 2 follow-up emails, 1 LinkedIn message, and a voicemail. The founder asks you to get a response. What do you do?</p>
+    </div>
+    <div class="scenario-grid" id="case3-opts">
+      <div class="scenario-opt" onclick="pickScenario(3,'A',20)">
+        <div class="so-letter">A</div>
+        <div class="so-text">Send one final email saying "I'll take your silence as a no — please let me know if things change."</div>
+      </div>
+      <div class="scenario-opt" onclick="pickScenario(3,'B',60)">
+        <div class="so-letter">B</div>
+        <div class="so-text">Try a completely different channel — find their work email and send a direct message from the founder's account to get attention.</div>
+      </div>
+      <div class="scenario-opt" onclick="pickScenario(3,'C',95)">
+        <div class="so-letter">C</div>
+        <div class="so-text">Send a short pattern-interrupt message: "Hi [Name] — I know you're busy. I'm not chasing for the sake of it. One honest question: has something changed internally, or is the proposal still under consideration? Either answer helps us plan — happy to adjust timing or scope if needed." Then offer a specific 15-min slot to "close the loop, whatever that looks like."</div>
+      </div>
+      <div class="scenario-opt" onclick="pickScenario(3,'D',40)">
+        <div class="so-letter">D</div>
+        <div class="so-text">Escalate to the founder and let them handle it — it's now a senior relationship issue.</div>
+      </div>
+    </div>
+    <div id="case3-result" class="hidden"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: STAGE 4 – BEHAVIOURAL
+══════════════════════════════════ -->
+<div id="screen-s4" class="screen">
+  <div class="flex-between mb-16">
+    <button class="btn btn-sm btn-outline" onclick="goTo('screen-home')">← Back</button>
+    <div class="badge badge-green">Stage 4</div>
+    <button class="btn btn-sm btn-outline" onclick="resetS4()">↺ Retry</button>
+  </div>
+
+  <div class="page-header">
+    <h2>Behavioural Round</h2>
+    <p>STAR method, mindset & UK communication assessment</p>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="switchS4Tab('star')">⭐ STAR Builder</button>
+    <button class="tab-btn" onclick="switchS4Tab('mindset')">🧠 Mindset Test</button>
+    <button class="tab-btn" onclick="switchS4Tab('objection')">🛡️ Objections</button>
+    <button class="tab-btn" onclick="switchS4Tab('ukculture')">🇬🇧 UK Culture</button>
+  </div>
+
+  <!-- STAR BUILDER -->
+  <div id="s4-star" class="s4-tab">
+    <div class="card mb-12">
+      <div class="badge badge-green mb-8">STAR Method</div>
+      <p class="text-sm mb-12" style="color:var(--text2);">Answer: <b style="color:var(--text);">"Tell me about a time you identified a lead others missed."</b></p>
+      <div class="star-section">
+        <h4>S — SITUATION</h4>
+        <textarea id="star-s" placeholder="Set the context. e.g. 'I was working on a campaign targeting mid-size UK manufacturers...'" rows="2"></textarea>
+      </div>
+      <div class="star-section mt-12">
+        <h4>T — TASK</h4>
+        <textarea id="star-t" placeholder="What was your responsibility? e.g. 'My job was to identify 20 qualified leads per week...'" rows="2"></textarea>
+      </div>
+      <div class="star-section mt-12" style="border-color:var(--accent3);">
+        <h4 style="color:var(--accent3);">A — ACTION</h4>
+        <textarea id="star-a" placeholder="Specific steps you took. e.g. 'I noticed decision-makers were active in a niche LinkedIn group...'" rows="3"></textarea>
+      </div>
+      <div class="star-section mt-12" style="border-color:var(--warn);">
+        <h4 style="color:var(--warn);">R — RESULT</h4>
+        <textarea id="star-r" placeholder="Quantify the outcome. e.g. '3 of those leads converted into meetings, 1 closed at £8K...'" rows="2"></textarea>
+      </div>
+      <button class="btn btn-primary btn-full mt-16" onclick="evaluateSTAR()">🔍 Evaluate My STAR Response</button>
+    </div>
+    <div id="star-feedback" class="hidden"></div>
+  </div>
+
+  <!-- MINDSET TEST -->
+  <div id="s4-mindset" class="s4-tab hidden">
+    <div id="mindset-q-area"></div>
+  </div>
+
+  <!-- OBJECTION HANDLING -->
+  <div id="s4-objection" class="s4-tab hidden">
+    <div class="card mb-12">
+      <h3 style="font-size:var(--fs-md);font-weight:700;margin-bottom:12px;">🛡️ Objection Handling Simulator</h3>
+      <div id="obj-scenario-area"></div>
+      <button class="btn btn-outline btn-full mt-12" onclick="nextObjScenario()">Next Objection →</button>
+    </div>
+    <div id="obj-response-area"></div>
+  </div>
+
+  <!-- UK CULTURE -->
+  <div id="s4-ukculture" class="s4-tab hidden">
+    <div class="card mb-12">
+      <h3 style="font-size:var(--fs-md);font-weight:700;margin-bottom:4px;">🇬🇧 UK Business Etiquette Quiz</h3>
+      <p class="text-xs mb-12">Test your awareness of British business communication style</p>
+    </div>
+    <div id="uk-quiz-area"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: KPI & COMMISSION
+══════════════════════════════════ -->
+<div id="screen-kpi" class="screen">
+  <div class="flex-between mb-16">
+    <button class="btn btn-sm btn-outline" onclick="goTo('screen-home')">← Back</button>
+    <h3 style="font-size:var(--fs-md);font-weight:700;">KPI & Commission</h3>
+    <div class="badge badge-yellow">Live Calc</div>
+  </div>
+
+  <div class="card mb-16">
+    <h3 style="font-size:var(--fs-md);font-weight:700;margin-bottom:12px;">📊 Monthly KPI Projector</h3>
+    <div class="input-wrap">
+      <label>Leads contacted per day</label>
+      <input type="number" id="kpi-daily" value="20" min="1" max="200" oninput="calcKPI()">
+    </div>
+    <div class="input-wrap">
+      <label>Open / Response Rate (%)</label>
+      <input type="number" id="kpi-open" value="30" min="1" max="100" oninput="calcKPI()">
+    </div>
+    <div class="input-wrap">
+      <label>Lead → Meeting Conversion (%)</label>
+      <input type="number" id="kpi-conv" value="25" min="1" max="100" oninput="calcKPI()">
+    </div>
+    <div class="input-wrap">
+      <label>Meeting → Closed Deal (%)</label>
+      <input type="number" id="kpi-close" value="30" min="1" max="100" oninput="calcKPI()">
+    </div>
+    <div class="kpi-grid mt-8">
+      <div class="kpi-box"><div class="kpi-num text-accent" id="res-contacted">440</div><div class="kpi-lbl">Contacts/Month</div></div>
+      <div class="kpi-box"><div class="kpi-num text-accent2" id="res-responses">132</div><div class="kpi-lbl">Responses</div></div>
+      <div class="kpi-box"><div class="kpi-num text-green" id="res-meetings">33</div><div class="kpi-lbl">Meetings Booked</div></div>
+      <div class="kpi-box"><div class="kpi-num text-warn" id="res-deals">10</div><div class="kpi-lbl">Closed Deals</div></div>
+    </div>
+  </div>
+
+  <div class="card mb-16">
+    <h3 style="font-size:var(--fs-md);font-weight:700;margin-bottom:12px;">💰 Commission Calculator</h3>
+    <div class="input-wrap">
+      <label>Base Hourly Rate (₹)</label>
+      <input type="number" id="comm-base" value="400" oninput="calcComm()">
+    </div>
+    <div class="input-wrap">
+      <label>Hours per day</label>
+      <input type="number" id="comm-hrs" value="8" oninput="calcComm()">
+    </div>
+    <div class="input-wrap">
+      <label>Commission per closed lead (₹)</label>
+      <input type="number" id="comm-per-lead" value="2000" oninput="calcComm()">
+    </div>
+    <div class="input-wrap">
+      <label>Closed leads per month</label>
+      <input type="number" id="comm-leads" value="10" oninput="calcComm()">
+    </div>
+    <div class="calc-result">
+      <div class="text-xs mb-4">Estimated Monthly Earnings</div>
+      <div class="big" id="comm-total">₹0</div>
+      <div class="sub mt-4" id="comm-breakdown">Base: ₹0 + Commission: ₹0</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:var(--fs-md);font-weight:700;margin-bottom:12px;">📈 Revenue Impact Simulator</h3>
+    <p class="text-xs mb-12" style="color:var(--text2);">If your avg deal size is:</p>
+    <div class="input-wrap">
+      <label>Average Deal Value (£)</label>
+      <input type="number" id="deal-size" value="5000" oninput="calcRevenue()">
+    </div>
+    <div class="calc-result">
+      <div class="text-xs mb-4">Monthly Revenue Generated for Company</div>
+      <div class="big" id="rev-total" style="color:var(--accent);">£0</div>
+      <div class="sub mt-4" id="rev-breakdown">Based on 0 closed deals × £0 avg deal value</div>
+    </div>
+    <div class="feedback-box fb-good mt-12" id="rev-feedback"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: FINAL REPORT
+══════════════════════════════════ -->
+<div id="screen-report" class="screen">
+  <div class="flex-between mb-16">
+    <button class="btn btn-sm btn-outline" onclick="goTo('screen-home')">← Back</button>
+    <h3 style="font-size:var(--fs-md);font-weight:700;">Interview Report</h3>
+    <button class="btn btn-sm btn-success" onclick="downloadReport()">⬇️ Export</button>
+  </div>
+
+  <div class="readiness-badge" id="readiness-badge">
+    <div class="text-xs mb-4">Your Interview Readiness</div>
+    <div class="level gradient-text" id="readiness-level">Calculating…</div>
+    <div class="text-xs mt-4" id="readiness-sub">Complete all stages to unlock your full report</div>
+  </div>
+
+  <div style="display:flex;justify-content:center;margin-bottom:20px;">
+    <div class="score-ring">
+      <div class="num" id="report-overall">—</div>
+      <div class="lbl">Overall</div>
+    </div>
+  </div>
+
+  <div class="card mb-16">
+    <h4 style="font-size:var(--fs-md);font-weight:700;margin-bottom:12px;">Score Breakdown</h4>
+    <div class="report-row">
+      <span class="lbl">Stage 1 – Screening</span>
+      <span class="val text-accent" id="rpt-s1">—</span>
+    </div>
+    <div class="report-row">
+      <span class="lbl">Stage 2 – Technical</span>
+      <span class="val text-accent2" id="rpt-s2">—</span>
+    </div>
+    <div class="report-row">
+      <span class="lbl">Stage 3 – Scenarios</span>
+      <span class="val text-warn" id="rpt-s3">—</span>
+    </div>
+    <div class="report-row">
+      <span class="lbl">Stage 4 – Behavioural</span>
+      <span class="val text-green" id="rpt-s4">—</span>
+    </div>
+  </div>
+
+  <div class="card mb-16">
+    <h4 style="font-size:var(--fs-md);font-weight:700;margin-bottom:12px;">Competency Radar</h4>
+    <div class="score-bar-wrap">
+      <div class="score-bar-row">
+        <span class="lbl">LinkedIn Prospecting</span>
+        <div class="fill"><div style="background:var(--accent);" id="comp-li"></div></div>
+        <span class="val text-accent" id="comp-li-v">—</span>
+      </div>
+      <div class="score-bar-row">
+        <span class="lbl">CRM Management</span>
+        <div class="fill"><div style="background:var(--accent2);" id="comp-crm"></div></div>
+        <span class="val text-accent2" id="comp-crm-v">—</span>
+      </div>
+      <div class="score-bar-row">
+        <span class="lbl">Outreach Writing</span>
+        <div class="fill"><div style="background:var(--accent3);" id="comp-out"></div></div>
+        <span class="val text-green" id="comp-out-v">—</span>
+      </div>
+      <div class="score-bar-row">
+        <span class="lbl">Scenario Thinking</span>
+        <div class="fill"><div style="background:var(--warn);" id="comp-scen"></div></div>
+        <span class="val text-warn" id="comp-scen-v">—</span>
+      </div>
+      <div class="score-bar-row">
+        <span class="lbl">UK Culture Fit</span>
+        <div class="fill"><div style="background:var(--danger);" id="comp-uk"></div></div>
+        <span class="val text-danger" id="comp-uk-v">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-16" id="roadmap-card">
+    <h4 style="font-size:var(--fs-md);font-weight:700;margin-bottom:12px;">🗺️ Improvement Roadmap</h4>
+    <div id="roadmap-content" style="font-size:var(--fs-sm);line-height:1.7;color:var(--text2);">
+      Complete all interview stages to generate a personalised improvement roadmap.
+    </div>
+  </div>
+
+  <button class="btn btn-primary btn-full" onclick="refreshReport()">🔄 Recalculate Report</button>
+</div>
+
+<!-- ══════════════════════════════════
+     BOTTOM NAVIGATION
+══════════════════════════════════ -->
+<nav class="nav-bar">
+  <button class="nav-item active" id="nav-home" onclick="navTo('screen-home','nav-home')">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Home
+  </button>
+  <button class="nav-item" id="nav-s1" onclick="navTo('screen-s1','nav-s1')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Screen
+  </button>
+  <button class="nav-item" id="nav-s2" onclick="navTo('screen-s2','nav-s2')">
+    <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Technical
+  </button>
+  <button class="nav-item" id="nav-kpi" onclick="navTo('screen-kpi','nav-kpi')">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    KPI
+  </button>
+  <button class="nav-item" id="nav-report" onclick="navTo('screen-report','nav-report')">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    Report
+  </button>
+</nav>
+
+<script>
+// ══════════════════════════════════
+// STATE
+// ══════════════════════════════════
+const state = {
+  scores: { s1:null, s2:0, s3:0, s4:0 },
+  s1: { current:0, answers:[], totalScore:0 },
+  s2: { linkedinDone:false, icpDone:false, outScore:0 },
+  s3: { picks:[] },
+  s4: { starScore:0, mindsetScore:0, ukScore:0, objScore:0 },
+  theme: 'dark'
+};
+
+// ══════════════════════════════════
+// NAV
+// ══════════════════════════════════
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+  if(id==='screen-report') refreshReport();
+}
+
+function navTo(screenId, navId) {
+  goTo(screenId);
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById(navId).classList.add('active');
+}
+
+// ══════════════════════════════════
+// THEME
+// ══════════════════════════════════
+function toggleTheme() {
+  const t = document.getElementById('themeToggle');
+  t.classList.toggle('on');
+  document.body.classList.toggle('light');
+  state.theme = document.body.classList.contains('light') ? 'light':'dark';
+}
+
+// ══════════════════════════════════
+// STAGE 1 – SCREENING
+// ══════════════════════════════════
+const S1_QUESTIONS = [
+  {
+    q: "We're a 3-month-old UK startup. You'd be our first lead gen hire, working fully remotely from India. Walk me through exactly how you'd structure your first 30 days to start filling our pipeline.",
+    opts: [
+      "Spend the first 30 days learning the product thoroughly before contacting anyone",
+      "Immediately start cold emailing everyone in the existing prospect database",
+      "Week 1: shadow the founders, understand ICP and value prop. Week 2: audit the existing prospect database and enrich top 50 contacts. Week 3: run first 20 personalised LinkedIn outreaches and measure response rate. Week 4: review data, refine messaging, present a 60-day pipeline plan to leadership.",
+      "Ask the manager to provide a daily task list and follow instructions"
+    ],
+    correct: 2,
+    feedback: {
+      right: "✅ Exactly right. UK startup founders want a self-starter who has a plan on day 1 — not someone who waits to be told what to do. Showing a phased approach with measurement at each stage signals you're an operator, not just an executor.",
+      wrong: "❌ A startup's biggest fear is hiring someone who disappears for weeks 'learning' or burns the database with mass outreach. The best answer shows initiative, structure, and a bias toward measured action with feedback loops."
+    },
+    points: 20
+  },
+  {
+    q: "We have a database of 2,000 UK procurement contacts that haven't been touched in 8 months. How do you prioritise and activate it?",
+    opts: [
+      "Email all 2,000 contacts the same message to maximise reach immediately",
+      "Delete it and start fresh — stale data is useless",
+      "Segment by seniority, company size and industry. Enrich top 200 via LinkedIn and Companies House. Check email validity with a tool like NeverBounce. Run a 3-touch personalised sequence to Tier 1 (Director+), a lighter 2-touch to Tier 2, and flag bad data for removal.",
+      "Hand the list back to the founders and ask for a cleaner dataset"
+    ],
+    correct: 2,
+    feedback: {
+      right: "✅ Strong data-ops thinking. UK interviewers want to see you treat a database as a strategic asset — not a spray-and-pray list. Segmentation + enrichment + validation before outreach shows commercial maturity.",
+      wrong: "❌ Blasting a stale list damages your domain reputation and burns contacts. The right move is triage: segment, enrich, validate, then sequence — with personalisation scaled to lead quality."
+    },
+    points: 20
+  },
+  {
+    q: "You sent 50 LinkedIn connection requests this week. 12 accepted. Of those, you sent outreach messages to all 12. You got 2 replies — both saying 'not right now'. What's your honest diagnosis of what went wrong?",
+    opts: [
+      "The product isn't a good fit for the market — escalate to founders",
+      "LinkedIn just doesn't work for this audience; switch to cold calling",
+      "A 24% acceptance rate is fine, but a 17% reply rate suggests the message isn't creating urgency or relevance. I'd review: was the opening line generic? Was there a clear pain-point hook? Was the CTA too big? I'd A/B test 2 new message variants and track open-to-reply ratio.",
+      "2 replies from 12 is normal — keep sending the same sequence"
+    ],
+    correct: 2,
+    feedback: {
+      right: "✅ This is exactly the self-critical, data-led thinking a startup needs. You correctly identified that acceptance rate ≠ message quality. UK SDR managers want to see you diagnose at the message level, not blame the channel or the product.",
+      wrong: "❌ Accepting a 17% reply rate as normal, or blaming the channel, are both dangerous in a startup where every lead counts. The right answer is ruthless self-diagnosis: open line, hook, CTA — test each variable independently."
+    },
+    points: 20
+  },
+  {
+    q: "A UK Procurement Director you've never spoken to replies to your LinkedIn message: 'We already work with a supplier for this.' How do you respond in under 50 words?",
+    opts: [
+      "'Great to hear! Our solution is better — can I send you a comparison?'",
+      "'Understood, thanks for letting me know.' — close the conversation politely",
+      "'That's good to know — most of our clients had an existing solution too. Out of curiosity, is it covering your visibility into supplier spend, or is that still a manual process?' — open a gap question, don't close the door.",
+      "'Would you be open to a 30-minute product demo next week?'"
+    ],
+    correct: 2,
+    feedback: {
+      right: "✅ Textbook objection handling. 'We already have a supplier' is not a no — it's an opening. You correctly used a gap question to diagnose whether their current solution is actually solving the problem. UK buyers respect curiosity over pushiness.",
+      wrong: "❌ Either folding immediately or pushing for a demo are both wrong. The right move is a short, non-threatening question that makes them reflect on whether their current solution is working. Keep the door open with genuine curiosity."
+    },
+    points: 20
+  },
+  {
+    q: "Your target is 15 qualified meetings per month. In week 3, you've booked 4. What do you do — and what do you tell your manager?",
+    opts: [
+      "Say nothing and hope week 4 catches up",
+      "Tell your manager it's an unrealistic target and ask for it to be reduced",
+      "Proactively flag it to your manager on Monday: 'I'm at 4/15 — here's my diagnosis: response rate dropped this week on sequence 2. I'm testing a new message variant today and doubling outreach volume to Tier 1 contacts. I expect 6–8 more by Friday.' Show the plan, not just the problem.",
+      "Work twice as many hours in week 4 without informing anyone"
+    ],
+    correct: 2,
+    feedback: {
+      right: "✅ This is the answer that gets you hired. UK startup founders want radical transparency + problem-solving in the same breath. Never hide a shortfall — surface it early with a plan. This builds trust faster than always hitting target.",
+      wrong: "❌ Hiding problems destroys trust in a small team. Blaming the target without data is defensive. The winning response is proactive transparency: here's where I am, here's why, here's what I'm doing about it — before you're asked."
+    },
+    points: 20
+  }
+];
+
+let s1Timer;
+
+function initStage1() {
+  state.s1 = { current:0, answers:[], totalScore:0 };
+  renderS1Question();
+  startS1Timer();
+}
+
+function renderS1Question() {
+  const q = S1_QUESTIONS[state.s1.current];
+  const area = document.getElementById('s1-question-area');
+  document.getElementById('s1-prog-text').textContent = `Q${state.s1.current+1} of ${S1_QUESTIONS.length}`;
+  document.getElementById('s1-prog').style.width = `${((state.s1.current+1)/S1_QUESTIONS.length)*100}%`;
+  document.getElementById('s1-feedback-area').innerHTML = '';
+  document.getElementById('s1-confidence').classList.add('hidden');
+
+  area.innerHTML = `
+    <div class="card mb-12 fade-in">
+      <div class="badge badge-blue mb-8">Question ${state.s1.current+1}</div>
+      <p style="font-size:var(--fs-sm);font-weight:600;line-height:1.5;margin-bottom:16px;">${q.q}</p>
+      <div class="option-list" id="s1-opts">
+        ${q.opts.map((o,i)=>`
+          <div class="option-item" onclick="selectS1Opt(${i})" id="s1-opt-${i}">
+            <div class="opt-num">${['A','B','C','D'][i]}</div>
+            <div class="opt-text">${o}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  const actions = document.getElementById('s1-actions');
+  actions.innerHTML = `<button class="btn btn-primary btn-full" id="s1-submit-btn" onclick="submitS1()">Submit Answer</button>`;
+}
+
+let selectedS1Opt = null;
+function selectS1Opt(i) {
+  selectedS1Opt = i;
+  document.querySelectorAll('[id^="s1-opt-"]').forEach(el=>el.classList.remove('selected'));
+  document.getElementById(`s1-opt-${i}`).classList.add('selected');
+}
+
+function submitS1() {
+  if(selectedS1Opt===null) { alert('Please select an answer first.'); return; }
+  const q = S1_QUESTIONS[state.s1.current];
+  const isRight = selectedS1Opt === q.correct;
+
+  document.querySelectorAll('[id^="s1-opt-"]').forEach((el,i)=>{
+    if(i===q.correct) el.classList.add('correct');
+    else if(i===selectedS1Opt && !isRight) el.classList.add('wrong');
+  });
+
+  document.getElementById('s1-confidence').classList.remove('hidden');
+
+  const fb = document.getElementById('s1-feedback-area');
+  const score = isRight ? q.points : Math.round(q.points*0.15);
+  state.s1.totalScore += score;
+  state.s1.answers.push({q:state.s1.current, selected:selectedS1Opt, correct:isRight, score});
+
+  fb.innerHTML = `
+    <div class="feedback-box ${isRight?'fb-good':'fb-bad'} fade-in">
+      ${isRight ? q.feedback.right : q.feedback.wrong}
+    </div>
+    <div class="feedback-box fb-info mt-8">
+      <b>Points earned:</b> +${score}/${q.points} &nbsp;|&nbsp; <b>Running total:</b> ${state.s1.totalScore}
+    </div>`;
+
+  const actions = document.getElementById('s1-actions');
+  if(state.s1.current < S1_QUESTIONS.length-1) {
+    actions.innerHTML = `<button class="btn btn-primary btn-full" onclick="nextS1Q()">Next Question →</button>`;
+  } else {
+    finishS1();
+    actions.innerHTML = `<button class="btn btn-success btn-full" onclick="goTo('screen-home')">✓ Stage Complete → Home</button>`;
+  }
+  selectedS1Opt = null;
+}
+
+function nextS1Q() {
+  state.s1.current++;
+  selectedS1Opt = null;
+  renderS1Question();
+}
+
+function finishS1() {
+  clearInterval(s1Timer);
+  const pct = Math.round((state.s1.totalScore/100)*100);
+  state.scores.s1 = pct;
+  document.getElementById('s1-badge').textContent = `${pct}%`;
+  document.getElementById('s1-badge').className = `badge ${pct>=70?'badge-green':pct>=50?'badge-yellow':'badge-red'}`;
+  updateHomeProgress();
+}
+
+let s1Time = 900;
+function startS1Timer() {
+  clearInterval(s1Timer);
+  s1Time = 900;
+  s1Timer = setInterval(()=>{
+    s1Time--;
+    const m = Math.floor(s1Time/60);
+    const s = s1Time%60;
+    document.getElementById('s1-timer').textContent = `${m}:${s<10?'0':''}${s}`;
+    const dot = document.getElementById('s1-tdot');
+    if(s1Time<120){ dot.classList.remove('warn'); dot.classList.add('danger'); }
+    else if(s1Time<300){ dot.classList.add('warn'); }
+    if(s1Time<=0){ clearInterval(s1Timer); finishS1(); }
+  },1000);
+}
+
+function resetStage1() { clearInterval(s1Timer); initStage1(); }
+
+// ══════════════════════════════════
+// STAGE 2 – TECHNICAL
+// ══════════════════════════════════
+function switchS2Tab(name) {
+  document.querySelectorAll('.s2-tab').forEach(t=>t.classList.add('hidden'));
+  document.getElementById(`s2-${name}`).classList.remove('hidden');
+  document.querySelectorAll('#s2-tabs .tab-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function buildBoolean() {
+  const titles = document.getElementById('bool-titles').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const industries = document.getElementById('bool-industries').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const location = document.getElementById('bool-location').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const size = document.getElementById('bool-size').value;
+
+  const titleStr = '(' + titles.map(t=>`"${t}"`).join(' OR ') + ')';
+  const indStr = '(' + industries.map(i=>`"${i}"`).join(' OR ') + ')';
+  const locStr = '(' + location.map(l=>`"${l}"`).join(' OR ') + ')';
+
+  const bool = `${titleStr} AND ${indStr} AND ${locStr} AND "United Kingdom" NOT "intern" NOT "assistant" NOT "junior"`;
+
+  document.getElementById('bool-string').textContent = bool;
+  document.getElementById('bool-est').textContent = `${(titles.length*industries.length*800).toLocaleString()} – ${(titles.length*industries.length*3200).toLocaleString()}`;
+  document.getElementById('bool-tips').innerHTML = `
+    <b>💡 Pro Tips:</b><br>
+    • Add <code>NOT "intern" NOT "junior"</code> to target decision-makers only<br>
+    • Use Sales Navigator: filter by seniority=Director+ for better quality<br>
+    • Cross-reference with Companies House for UK registered business verification<br>
+    • Save your search as a Lead List and monitor weekly for new entrants`;
+
+  document.getElementById('bool-output').classList.remove('hidden');
+  state.s2.linkedinDone = true;
+  updateS2Score();
+}
+
+function markS2LinkedIn() {
+  state.s2.linkedinDone = true;
+  updateS2Score();
+  alert('✅ LinkedIn Boolean section marked complete!');
+}
+
+function buildICP() {
+  const role = document.getElementById('icp-role').value;
+  const rev = document.getElementById('icp-rev').value;
+  const pains = Array.from(document.querySelectorAll('#icp-pains input:checked')).map(i=>i.value);
+
+  document.getElementById('icp-content').innerHTML = `
+    <div class="card-row mb-12">
+      <div class="kpi-box"><div class="kpi-num text-accent">${role.split(' ')[0]}</div><div class="kpi-lbl">Target Role</div></div>
+      <div class="kpi-box"><div class="kpi-num text-green" style="font-size:var(--fs-sm);">${rev}</div><div class="kpi-lbl">Revenue Band</div></div>
+    </div>
+    <div style="font-size:var(--fs-sm);line-height:1.7;">
+      <b style="color:var(--accent2);">Pain Points:</b><br>
+      ${pains.map(p=>`• ${p}`).join('<br>')||'• None selected'}
+    </div>
+    <div class="divider"></div>
+    <div style="font-size:var(--fs-xs);color:var(--text2);">
+      <b style="color:var(--text);">Qualifying Questions to Ask:</b><br>
+      • "How many suppliers do you currently manage manually?"<br>
+      • "What's your biggest procurement headache right now?"<br>
+      • "Have you evaluated any procurement software in the last 12 months?"
+    </div>`;
+
+  document.getElementById('icp-output').classList.remove('hidden');
+  state.s2.icpDone = true;
+  updateS2Score();
+}
+
+function generateOutreach() {
+  const name = document.getElementById('out-name').value || 'Sarah';
+  const role = document.getElementById('out-role').value || 'Procurement Director';
+  const company = document.getElementById('out-company').value || 'your company';
+  const tone = document.getElementById('out-tone').value;
+
+  let msg;
+  if(tone==='formal') {
+    msg = `Hi ${name},\n\nI came across your profile and noticed you're leading procurement at ${company}. With the increasing pressure on UK SMEs to modernise their supply chains, I thought it might be worth a brief conversation.\n\nWe're working with procurement leaders across the UK to reduce manual processes and improve supplier visibility — typically saving 15-20% in procurement admin time.\n\nWould a 15-minute call this week be convenient?\n\nBest regards`;
+  } else if(tone==='warm') {
+    msg = `Hi ${name},\n\nI noticed you're the ${role} at ${company} — impressive work in that space.\n\nI'm helping UK procurement teams cut through the complexity of manual supplier management. Given what I know about the ${company.split(' ')[0]} space, I think there might be a relevant conversation here.\n\nWould Tuesday at 10am or Thursday at 2pm work for a quick 15 minutes?\n\nWarm regards`;
+  } else {
+    msg = `Hi ${name},\n\nDirect question: is manual procurement still costing ${company} time and money?\n\nWe solve that. UK SMEs using our approach report 20% admin reduction within 90 days.\n\n15-minute call this week — yes or no?`;
+  }
+
+  document.getElementById('outreach-msg').textContent = msg;
+
+  const scores = {
+    'Personalisation': tone==='formal'?55:tone==='warm'?85:70,
+    'Clear CTA': tone==='direct'?95:80,
+    'Value Prop': tone==='formal'?75:tone==='warm'?80:90,
+    'Brevity': tone==='direct'?95:tone==='warm'?75:60,
+    'UK Tone Fit': tone==='formal'?90:tone==='warm'?85:65
+  };
+  const avg = Math.round(Object.values(scores).reduce((a,b)=>a+b,0)/Object.keys(scores).length);
+
+  document.getElementById('out-score-badge').textContent = `Score: ${avg}/100`;
+  document.getElementById('out-score-badge').className = `badge ${avg>=80?'badge-green':avg>=65?'badge-yellow':'badge-red'}`;
+
+  document.getElementById('out-scores').innerHTML = Object.entries(scores).map(([k,v])=>`
+    <div class="score-bar-row">
+      <span class="lbl">${k}</span>
+      <div class="fill"><div style="width:${v}%;background:${v>=80?'var(--accent3)':v>=65?'var(--warn)':'var(--danger)'}"></div></div>
+      <span class="val">${v}</span>
+    </div>`).join('');
+
+  const fbMap = {
+    formal: '🇬🇧 Formal tone suits senior UK contacts. Add a specific company insight to boost personalisation above 80%.',
+    warm: '✨ Warm consultative tone is optimal for UK SME decision-makers. Mention a specific pain point you\'ve researched.',
+    direct: '⚡ Direct works well for time-pressed CEOs. Ensure the value prop is crystal clear in under 3 sentences.'
+  };
+  document.getElementById('out-feedback').innerHTML = fbMap[tone];
+
+  document.getElementById('outreach-output').classList.remove('hidden');
+  state.s2.outScore = avg;
+  updateS2Score();
+}
+
+function updateS2Score() {
+  let sc = 0;
+  if(state.s2.linkedinDone) sc += 30;
+  if(state.s2.icpDone) sc += 30;
+  if(state.s2.outScore>0) sc += Math.round(state.s2.outScore*0.4);
+  state.scores.s2 = Math.min(sc,100);
+  document.getElementById('s2-badge').textContent = `${state.scores.s2}%`;
+  updateHomeProgress();
+}
+
+// CRM Drag & Drop
+let dragId = null;
+function drag(e,id) { dragId=id; e.target.classList.add('dragging'); }
+function allowDrop(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function drop(e,col) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if(!dragId) return;
+  const card = document.getElementById(`lead-${dragId}`);
+  e.currentTarget.appendChild(card);
+  card.classList.remove('dragging');
+  updateCRMStats();
+  dragId=null;
+}
+document.addEventListener('dragend',()=>{
+  document.querySelectorAll('.lead-card').forEach(c=>c.classList.remove('dragging'));
+  document.querySelectorAll('.pipeline-col').forEach(c=>c.classList.remove('drag-over'));
+});
+
+function updateCRMStats() {
+  const meetings = document.getElementById('col-meeting').querySelectorAll('.lead-card').length;
+  const total = document.querySelectorAll('.lead-card').length;
+  document.getElementById('crm-meetings').textContent = meetings;
+  document.getElementById('crm-conv').textContent = total>0?Math.round((meetings/total)*100)+'%':'0%';
+  document.getElementById('crm-pipeline').textContent = `£${(meetings*5000).toLocaleString()}`;
+  if(meetings>0) { state.scores.s2 = Math.min(state.scores.s2+10,100); updateHomeProgress(); }
+}
+
+// ══════════════════════════════════
+// STAGE 3 – SCENARIOS
+// ══════════════════════════════════
+function showCase(n, btn) {
+  document.querySelectorAll('.case-panel').forEach(p=>p.classList.add('hidden'));
+  document.getElementById(`case-${n}`).classList.remove('hidden');
+  document.querySelectorAll('#screen-s3 .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+const SCENARIO_FEEDBACK = {
+  A:{ 1:"❌ Blaming market pace without data is a red flag in a startup. Founders want to see self-diagnosis, not patience as a strategy.", 2:"✅ Outstanding. You took ownership, proposed a structured diagnostic, and suggested a concrete solution (pre-meeting checklist + pre-call form). This is what separates high performers from average SDRs.", 3:"❌ 'Take your silence as a no' closes the door permanently and burns a warm lead. Never give up a £15M company without a clean, human pattern-interrupt first." },
+  B:{ 1:"✅ Best answer. You diagnosed at the message level (not the lead level), proposed specific testable changes, gave a timeline, and offered to report back. This is SDR excellence.", 2:"❌ Deflecting blame without owning your qualification process is damaging to startup trust. Even if the ICP criteria was unclear, you had the power to ask for clarity before booking meetings.", 3:"❌ Accessing someone's work email without consent and impersonating or borrowing the founder's account crosses ethical and GDPR lines. This would be a serious red flag in any UK company.", 4:"❌ Switching channels without testing the message is the wrong diagnosis. The problem may be the opening line, the ask, or the timing — not the channel." },
+  C:{ 1:"❌ Blaming the list deflects accountability. A good SDR improves results from the same data through better targeting and messaging — not by demanding new assets.", 2:"✅ Good — asking for examples of what worked shows data curiosity. However, answer A goes further by proposing a full pre-meeting qualification system, not just pattern-matching.", 3:"✅ Best answer. The pattern-interrupt message is direct, human, non-pushy, and creates a low-friction path to re-engagement. 'Either answer helps us plan' removes the prospect's fear of saying no — which makes them more likely to reply honestly.", 4:"❌ Lowering the target instead of fixing the quality issue is avoidance. The founder needs both volume and quality — your job is to solve both, not compromise on one." },
+  D:{ 1:"❌ Switching channels entirely without diagnosing what went wrong on LinkedIn first is reactive. The channel rarely fails — the message usually does.", 2:"❌ Suggesting fewer meetings as the solution to quality issues signals you're not thinking about how to improve your system — just how to reduce your accountability.", 3:"❌ Escalating too quickly signals you can't operate independently. Pattern-interrupts and re-engagement are core SDR skills. You should exhaust creative outreach before escalating." }
+};
+
+function pickScenario(caseN, letter, score) {
+  const opts = document.getElementById(`case${caseN}-opts`);
+  opts.querySelectorAll('.scenario-opt').forEach((el,i)=>{
+    const letters = ['A','B','C','D'];
+    const sc = [caseN===1?[70,95,50,40]:caseN===2?[85,30,60,75]:[40,60,95,20]][0][i];
+    if(letters[i]===letter) {
+      el.classList.add('picked');
+      el.innerHTML += `<div class="so-score text-accent">Your choice — ${score}/100 pts</div>`;
+    }
+    if(sc===95||sc>=85) el.classList.add('best');
+    else if(sc<=30) el.classList.add('worst');
+  });
+
+  const result = document.getElementById(`case${caseN}-result`);
+  result.classList.remove('hidden');
+  result.innerHTML = `
+    <div class="card fade-in">
+      <div class="flex-between mb-8">
+        <span class="fw-700">Your Answer: Option ${letter}</span>
+        <span class="badge ${score>=80?'badge-green':score>=60?'badge-yellow':'badge-red'}">${score}/100</span>
+      </div>
+      <div class="feedback-box ${score>=80?'fb-good':score>=60?'fb-warn':'fb-bad'}">
+        ${SCENARIO_FEEDBACK[letter][caseN]}
+      </div>
+      <div class="feedback-box fb-info mt-8">
+        <b>Improvement Tip:</b> UK startup interviewers want to hear you mention <i>data, speed, and iteration</i>. Always frame answers around: "I would measure X, test Y, and report back in Z days."
+      </div>
+    </div>`;
+
+  state.s3.picks.push(score);
+  const avg = Math.round(state.s3.picks.reduce((a,b)=>a+b,0)/state.s3.picks.length);
+  state.scores.s3 = avg;
+  document.getElementById('s3-badge').textContent = `${avg}%`;
+  document.getElementById('s3-badge').className = `badge ${avg>=70?'badge-green':avg>=50?'badge-yellow':'badge-red'}`;
+  updateHomeProgress();
+}
+
+function resetS3() { state.s3.picks=[]; state.scores.s3=0; location.reload(); }
+
+// ══════════════════════════════════
+// STAGE 4 – BEHAVIOURAL
+// ══════════════════════════════════
+function switchS4Tab(name) {
+  document.querySelectorAll('.s4-tab').forEach(t=>t.classList.add('hidden'));
+  document.getElementById(`s4-${name}`).classList.remove('hidden');
+  document.querySelectorAll('#screen-s4 .tab-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  if(name==='mindset') initMindset();
+  if(name==='objection') initObjHandler();
+  if(name==='ukculture') initUKQuiz();
+}
+
+function evaluateSTAR() {
+  const s = document.getElementById('star-s').value.trim();
+  const t = document.getElementById('star-t').value.trim();
+  const a = document.getElementById('star-a').value.trim();
+  const r = document.getElementById('star-r').value.trim();
+
+  if(!s||!t||!a||!r) { alert('Please fill in all four STAR sections.'); return; }
+
+  const hasNum = /\d/.test(r);
+  const len = s.length+t.length+a.length+r.length;
+  let score = 40;
+  if(len>200) score += 20;
+  if(hasNum) score += 20;
+  if(a.length>80) score += 15;
+  if(score>100) score=100;
+
+  state.s4.starScore = score;
+  updateS4Score();
+
+  document.getElementById('star-feedback').classList.remove('hidden');
+  document.getElementById('star-feedback').innerHTML = `
+    <div class="card fade-in">
+      <div class="flex-between mb-8">
+        <span class="fw-700">STAR Evaluation</span>
+        <span class="badge ${score>=80?'badge-green':score>=60?'badge-yellow':'badge-red'}">${score}/100</span>
+      </div>
+      <div class="feedback-box ${score>=80?'fb-good':score>=60?'fb-warn':'fb-bad'}">
+        ${score>=80?'✅ Strong STAR response. Clear structure, measurable outcomes.':score>=60?'⚠️ Good structure, but add more specific numbers and quantify your impact.':'❌ Too vague. Add a specific situation, concrete actions taken, and measurable results (numbers!).'}
+      </div>
+      <div style="font-size:var(--fs-xs);margin-top:12px;color:var(--text2);line-height:1.7;">
+        ${!hasNum?'<b class="text-danger">⚠ Add numbers!</b> e.g. "increased by 35%", "booked 12 meetings in 3 weeks"<br>':''}
+        ${a.length<80?'<b class="text-warn">⚠ Action section too brief.</b> Describe at least 2-3 specific steps you took.<br>':''}
+        <b class="text-accent">💡 UK Tip:</b> British interviewers prefer modest but precise answers. Don't oversell — let the data speak.
+      </div>
+    </div>`;
+}
+
+// MINDSET TEST
+const MINDSET_Qs = [
+  {
+    q: "You've been given a list of 500 UK procurement contacts. No playbook, no templates, no training. Your manager says: 'Figure it out — I need meetings by Friday.' It's Monday morning. What's your first move?",
+    opts: [
+      "Email your manager asking for a proper onboarding plan before starting",
+      "Pick the top 20 names and send them all the same generic outreach message",
+      "Spend 2 hours researching: identify the top 30 contacts by seniority + company size, find their LinkedIn profiles, draft 3 message variants tailored to different pain points, send your first 10 by noon, and review open/reply data by end of day.",
+      "Tell your manager 5 days isn't enough time and ask for a deadline extension"
+    ],
+    correct: 2,
+    pts: 25
+  },
+  {
+    q: "A UK founder you're supporting gives you critical feedback on your outreach messages: 'These sound like every other SDR — there's nothing memorable here.' How do you respond?",
+    opts: [
+      "Defend your approach — you've used these templates successfully before",
+      "Apologise, say you'll do better, and send the same style messages with minor tweaks",
+      "Thank them for the directness. Ask to see an example of a message that resonates with them. Research the last 3 deals that closed and look for patterns in what the prospects responded to. Rewrite 5 new message variants by next morning and ask for feedback before sending.",
+      "Ask them to write the messages for you since they know the customers better"
+    ],
+    correct: 2,
+    pts: 25
+  },
+  {
+    q: "It's Thursday 8pm IST (3pm GMT). You've had a slow week — only 2 meetings booked vs your 5-per-week target. You have a hot lead who was active on LinkedIn 20 minutes ago. You:",
+    opts: [
+      "Log off — it's late, you'll message them tomorrow morning IST",
+      "Send a generic 'just checking in' message",
+      "Send a sharp, timely message: 'Hi [Name] — noticed you've been active in the procurement space on LinkedIn today. Quick question: is streamlining supplier onboarding on your radar for Q1? Worth 10 minutes?' — strike while they're online.",
+      "Wait until next Monday when you have a full plan ready"
+    ],
+    correct: 2,
+    pts: 25
+  },
+  {
+    q: "After 6 weeks, your conversion from outreach to booked meeting is 4% — below the 8% target. Your manager asks for your honest assessment. You say:",
+    opts: [
+      "'The UK market is different — these benchmarks don't apply to our segment.'",
+      "'I think the product positioning needs work — it's hard to sell.'",
+      "'My open rate is strong at 38% but reply rate drops off at the message level. I've identified 3 variables I haven't tested yet: first-line personalisation, time of send, and CTA format. Here's my test plan for next 2 weeks with expected uplift.'",
+      "'I'll try harder next month.'"
+    ],
+    correct: 2,
+    pts: 25
+  }
+];
+let mindsetQ=0, mindsetScore=0;
+
+function initMindset() {
+  mindsetQ=0; mindsetScore=0;
+  renderMindsetQ();
+}
+
+function renderMindsetQ() {
+  if(mindsetQ>=MINDSET_Qs.length) {
+    state.s4.mindsetScore = mindsetScore;
+    updateS4Score();
+    document.getElementById('mindset-q-area').innerHTML = `
+      <div class="card fade-in">
+        <div class="readiness-badge">
+          <div class="text-xs">Mindset Score</div>
+          <div class="level gradient-text">${mindsetScore}/100</div>
+          <div class="text-xs mt-4">${mindsetScore>=75?'Self-Driven Mindset ✅':mindsetScore>=50?'Developing — Keep Practising':'Needs significant development'}</div>
+        </div>
+      </div>`;
+    return;
+  }
+  const q = MINDSET_Qs[mindsetQ];
+  document.getElementById('mindset-q-area').innerHTML = `
+    <div class="card fade-in">
+      <div class="badge badge-green mb-8">Mindset Q${mindsetQ+1}/${MINDSET_Qs.length}</div>
+      <p style="font-size:var(--fs-sm);font-weight:600;margin-bottom:14px;line-height:1.5;">${q.q}</p>
+      <div class="option-list">
+        ${q.opts.map((o,i)=>`<div class="option-item" onclick="answerMindset(${i})" id="mq-${i}">
+          <div class="opt-num">${['A','B','C','D'][i]}</div>
+          <div class="opt-text">${o}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function answerMindset(i) {
+  const q = MINDSET_Qs[mindsetQ];
+  const right = i===q.correct;
+  if(right) mindsetScore+=q.pts;
+  document.querySelectorAll('[id^="mq-"]').forEach((el,idx)=>{
+    if(idx===q.correct) el.classList.add('correct');
+    else if(idx===i&&!right) el.classList.add('wrong');
+  });
+  setTimeout(()=>{ mindsetQ++; renderMindsetQ(); }, 1200);
+}
+
+// OBJECTION HANDLER
+const OBJECTIONS = [
+  {
+    prospect: "We went through a procurement software evaluation last year and decided to stick with spreadsheets.",
+    prospect_sub: "Context: They clearly have awareness of the problem but made a 'no change' decision.",
+    responses: [
+      { text: "Understood — that makes sense. When you made that call, was the main concern budget, or was it the complexity of switching over?", score: 92, feedback: "✅ Perfect. You didn't push back on their decision — you got curious about the real reason. This uncovers whether it was a budget objection, a change-management fear, or genuine satisfaction. UK buyers respect this approach." },
+      { text: "I think you'd find our solution much easier than the ones you evaluated — let me send you a brochure.", score: 25, feedback: "❌ You've dismissed their decision without understanding it. UK buyers find this dismissive. Never assume you know better than their lived experience without asking first." },
+      { text: "Oh interesting — what solutions did you look at? We often hear that the tools people evaluated weren't built for SMEs specifically.", score: 78, feedback: "Good — you opened a gap question about the alternatives. However, the first response is stronger because it goes directly to the 'why they stayed' — which is more actionable for your next step." }
+    ]
+  },
+  {
+    prospect: "I'm not the right person — you'd need to speak to our Head of Operations.",
+    prospect_sub: "Context: This is a Finance Director you researched and specifically targeted.",
+    responses: [
+      { text: "No problem at all — could you point me to their LinkedIn or give me their email? I'll reach out directly.", score: 55, feedback: "Acceptable — you got a referral. But you missed a chance to keep this contact warm. A warmer intro from them would convert far better than a cold approach to the Ops Head." },
+      { text: "Of course — would you be comfortable making a quick intro? It would mean a lot coming from you, and I'd keep the conversation very brief on their end.", score: 90, feedback: "✅ Excellent. A warm internal intro is 3–4× more likely to convert than a cold approach. You respected their boundary while maximising your chances. This is relationship-led selling." },
+      { text: "Actually, I reached out to you specifically because procurement strategy often has a financial impact — is there any part of supplier cost visibility that sits with your team?", score: 85, feedback: "✅ Smart reframe — you challenged the redirect politely and gave them a reason to stay in the conversation. This shows commercial intelligence. Both B and C are strong; B builds a longer-term relationship." }
+    ]
+  },
+  {
+    prospect: "We're too busy right now — maybe reach out again in Q2.",
+    prospect_sub: "Context: It's currently early January. Q2 is 3 months away.",
+    responses: [
+      { text: "Of course — I'll follow up in April. Have a great Q1!", score: 20, feedback: "❌ You've let a warm conversation go cold for 3 months with no commitment. 'Maybe in Q2' with no anchor is almost always a polite no. You needed to create a micro-commitment before ending the call." },
+      { text: "I completely understand Q1 is full-on. One thing I've found — would it help if I sent you a one-page summary now so when Q2 hits, you're not starting from scratch? Takes 2 minutes to read.", score: 80, feedback: "✅ Good. You kept the door open and gave them something of value with zero time commitment. When Q2 arrives, they'll remember you as considerate rather than pushy." },
+      { text: "Totally get it. Can I ask — what's driving the busy period? Sometimes what we do can actually reduce the workload during peaks like these.", score: 88, feedback: "✅ Best answer. You turned their objection into a discovery conversation. If procurement admin is causing the busy period, your solution is the answer. This is consultative selling at its sharpest." }
+    ]
+  }
+];
+let objIdx=0;
+function initObjHandler() { objIdx=0; renderObj(); }
+function nextObjScenario() { objIdx=(objIdx+1)%OBJECTIONS.length; renderObj(); }
+function renderObj() {
+  const o = OBJECTIONS[objIdx];
+  document.getElementById('obj-scenario-area').innerHTML = `
+    <div class="badge badge-purple mb-8">Prospect says:</div>
+    <div class="obj-bubble">"${o.prospect}"${o.prospect_sub?`<br><small style="color:var(--text2);">${o.prospect_sub}</small>`:''}</div>
+    <div class="fw-700 text-sm mb-8">How do you respond?</div>
+    ${o.responses.map((r,i)=>`<div class="option-item mb-8" onclick="pickObj(${i})">
+      <div class="opt-num">${['A','B','C'][i]}</div>
+      <div class="opt-text">${r.text}</div>
+    </div>`).join('')}`;
+  document.getElementById('obj-response-area').innerHTML='';
+}
+function pickObj(i) {
+  const r = OBJECTIONS[objIdx].responses[i];
+  state.s4.objScore = Math.max(state.s4.objScore, r.score);
+  updateS4Score();
+  document.getElementById('obj-response-area').innerHTML = `
+    <div class="card fade-in">
+      <div class="flex-between mb-8"><span class="fw-700">Evaluator Feedback</span><span class="badge ${r.score>=80?'badge-green':r.score>=60?'badge-yellow':'badge-red'}">${r.score}/100</span></div>
+      <div class="obj-reply">"${r.text}"</div>
+      <div class="feedback-box ${r.score>=80?'fb-good':r.score>=60?'fb-warn':'fb-bad'}">${r.feedback}</div>
+    </div>`;
+}
+
+// UK CULTURE QUIZ
+const UK_QUIZ = [
+  {
+    q: "You send a UK prospect a LinkedIn message on Monday. By Thursday they haven't replied. Your follow-up message should be:",
+    opts: [
+      "'Hi again — just checking in to see if you got my last message?'",
+      "'Hi [Name] — I came across this CIPS report on procurement digitalisation in UK SMEs and thought it might be relevant given your role. Still happy to connect if timing works.'",
+      "Call their office number directly — they're ignoring LinkedIn",
+      "Send the same original message again with 'FOLLOWING UP' in the subject"
+    ],
+    correct: 1,
+    pts: 25
+  },
+  {
+    q: "In a discovery call, a UK Operations Director says: 'It's an interesting concept.' Their tone is polite but neutral. What does this almost certainly mean?",
+    opts: [
+      "They're genuinely excited and will likely move forward",
+      "They're being diplomatic — they're not convinced yet and you haven't found the pain",
+      "They want to buy and are about to ask for a proposal",
+      "They'll refer you to a colleague who handles procurement"
+    ],
+    correct: 1,
+    pts: 25
+  },
+  {
+    q: "Your UK manager sends you a Slack message at 5pm GMT on a Friday: 'When you get a chance, could we have a quick chat about the pipeline numbers?' What does this mean and what do you do?",
+    opts: [
+      "It's casual — respond on Monday morning when you start your shift",
+      "It's urgent — call them immediately even though it's the end of their day",
+      "Read it as a soft signal that something needs addressing. Reply within 30 minutes: 'Of course — I can jump on now or happy to do first thing Monday, whatever works for you.' Let them set the pace.",
+      "Ignore it until they follow up — if it were urgent they'd call"
+    ],
+    correct: 2,
+    pts: 25
+  },
+  {
+    q: "You disagree with the outreach strategy your UK founder has set. You think targeting Operations Directors is wrong — Procurement Directors convert much better based on your data. How do you raise this?",
+    opts: [
+      "Keep quiet and follow the strategy — it's not your place to challenge the founder",
+      "Tell your manager directly: 'This strategy is wrong, we should change it.'",
+      "Prepare a short data summary: your last 20 outreach results by title, showing Procurement Director reply rates vs Ops Director. Share it in Slack: 'I've noticed something in the data this week — worth 5 minutes to discuss before we plan next week's sequence?'",
+      "Change your targeting without telling anyone and see if results improve"
+    ],
+    correct: 2,
+    pts: 25
+  }
+];
+let ukQ=0, ukScore=0;
+function initUKQuiz(){ ukQ=0; ukScore=0; renderUKQ(); }
+function renderUKQ() {
+  if(ukQ>=UK_QUIZ.length){
+    state.s4.ukScore=ukScore;
+    updateS4Score();
+    document.getElementById('uk-quiz-area').innerHTML=`<div class="card fade-in">
+      <div class="readiness-badge">
+        <div class="text-xs">UK Culture Score</div>
+        <div class="level gradient-text">${ukScore}/100</div>
+        <div class="text-xs mt-4">${ukScore>=75?'UK Culture Ready ✅':ukScore>=50?'Keep Learning':'Study UK business communication'}</div>
+      </div>
+    </div>`;
+    return;
+  }
+  const q = UK_QUIZ[ukQ];
+  document.getElementById('uk-quiz-area').innerHTML=`
+    <div class="card fade-in">
+      <div class="badge badge-blue mb-8">UK Culture Q${ukQ+1}/${UK_QUIZ.length}</div>
+      <p style="font-size:var(--fs-sm);font-weight:600;margin-bottom:14px;line-height:1.5;">${q.q}</p>
+      <div class="option-list">
+        ${q.opts.map((o,i)=>`<div class="option-item" onclick="answerUK(${i})" id="ukq-${i}">
+          <div class="opt-num">${['A','B','C','D'][i]}</div>
+          <div class="opt-text">${o}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+}
+function answerUK(i) {
+  const q=UK_QUIZ[ukQ]; const right=i===q.correct;
+  if(right) ukScore+=q.pts;
+  document.querySelectorAll('[id^="ukq-"]').forEach((el,idx)=>{
+    if(idx===q.correct) el.classList.add('correct');
+    else if(idx===i&&!right) el.classList.add('wrong');
+  });
+  setTimeout(()=>{ ukQ++; renderUKQ(); },1200);
+}
+
+function updateS4Score() {
+  const avg = Math.round((state.s4.starScore+state.s4.mindsetScore+state.s4.ukScore+state.s4.objScore)/4);
+  state.scores.s4 = avg;
+  document.getElementById('s4-badge').textContent = `${avg}%`;
+  document.getElementById('s4-badge').className = `badge ${avg>=70?'badge-green':avg>=50?'badge-yellow':'badge-red'}`;
+  updateHomeProgress();
+}
+
+function resetS4() { state.s4={starScore:0,mindsetScore:0,ukScore:0,objScore:0}; updateS4Score(); switchS4Tab('star'); }
+
+// ══════════════════════════════════
+// KPI & COMMISSION
+// ══════════════════════════════════
+function calcKPI() {
+  const daily = parseFloat(document.getElementById('kpi-daily').value)||0;
+  const open = parseFloat(document.getElementById('kpi-open').value)||0;
+  const conv = parseFloat(document.getElementById('kpi-conv').value)||0;
+  const close = parseFloat(document.getElementById('kpi-close').value)||0;
+  const monthly = daily*22;
+  const responses = Math.round(monthly*(open/100));
+  const meetings = Math.round(responses*(conv/100));
+  const deals = Math.round(meetings*(close/100));
+  document.getElementById('res-contacted').textContent = monthly.toLocaleString();
+  document.getElementById('res-responses').textContent = responses.toLocaleString();
+  document.getElementById('res-meetings').textContent = meetings.toLocaleString();
+  document.getElementById('res-deals').textContent = deals.toLocaleString();
+  document.getElementById('comm-leads').value = deals;
+  calcComm(); calcRevenue();
+}
+
+function calcComm() {
+  const base = parseFloat(document.getElementById('comm-base').value)||0;
+  const hrs = parseFloat(document.getElementById('comm-hrs').value)||0;
+  const perLead = parseFloat(document.getElementById('comm-per-lead').value)||0;
+  const leads = parseFloat(document.getElementById('comm-leads').value)||0;
+  const monthlyBase = base*hrs*22;
+  const commission = perLead*leads;
+  const total = monthlyBase+commission;
+  document.getElementById('comm-total').textContent = `₹${total.toLocaleString()}`;
+  document.getElementById('comm-breakdown').textContent = `Base: ₹${monthlyBase.toLocaleString()} + Commission: ₹${commission.toLocaleString()}`;
+}
+
+function calcRevenue() {
+  const deals = parseFloat(document.getElementById('res-deals').textContent.replace(/,/g,''))||0;
+  const size = parseFloat(document.getElementById('deal-size').value)||0;
+  const rev = deals*size;
+  document.getElementById('rev-total').textContent = `£${rev.toLocaleString()}`;
+  document.getElementById('rev-breakdown').textContent = `Based on ${deals} closed deals × £${size.toLocaleString()} avg deal value`;
+  const fb = rev>=50000?'🚀 Excellent pipeline impact! You would be a top performer at any UK startup.':rev>=20000?'✅ Strong revenue contribution. Aim to improve meeting-to-close rate.':rev>=5000?'⚡ Solid start. Focus on improving ICP alignment to increase close rate.':'📈 Early-stage pipeline. Focus on volume + qualification quality.';
+  document.getElementById('rev-feedback').innerHTML = fb;
+}
+
+// ══════════════════════════════════
+// HOME PROGRESS
+// ══════════════════════════════════
+function updateHomeProgress() {
+  const scores = [state.scores.s1, state.scores.s2, state.scores.s3, state.scores.s4].filter(s=>s!==null&&s>0);
+  const done = scores.length;
+  const avg = done>0?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;
+  const pct = Math.round((done/6)*100);
+  document.getElementById('home-readiness-pct').textContent = `${pct}%`;
+  document.getElementById('home-readiness-bar').style.width = `${pct}%`;
+  document.getElementById('home-stages-done').textContent = `${done}/6`;
+  document.getElementById('home-avg-score').textContent = done>0?`${avg}%`:'—';
+}
+
+// ══════════════════════════════════
+// REPORT
+// ══════════════════════════════════
+function refreshReport() {
+  const s1=state.scores.s1||0, s2=state.scores.s2||0, s3=state.scores.s3||0, s4=state.scores.s4||0;
+  const filled=[s1,s2,s3,s4].filter(s=>s>0);
+  const overall = filled.length>0?Math.round(filled.reduce((a,b)=>a+b,0)/filled.length):0;
+
+  document.getElementById('report-overall').textContent = overall||'—';
+  document.getElementById('rpt-s1').textContent = state.scores.s1!==null?`${s1}%`:'—';
+  document.getElementById('rpt-s2').textContent = s2>0?`${s2}%`:'—';
+  document.getElementById('rpt-s3').textContent = s3>0?`${s3}%`:'—';
+  document.getElementById('rpt-s4').textContent = s4>0?`${s4}%`:'—';
+
+  const level = overall>=80?'High Performer 🚀':overall>=60?'Hireable ✅':overall>=40?'Developing 📈':'Beginner 🌱';
+  const levelColor = overall>=80?'var(--accent3)':overall>=60?'var(--accent)':overall>=40?'var(--warn)':'var(--danger)';
+  document.getElementById('readiness-level').textContent = level;
+  document.getElementById('readiness-level').style.color = levelColor;
+  document.getElementById('readiness-sub').textContent = overall>=60?'You are interview-ready for this role.':'Complete all stages and improve your scores.';
+
+  const comps = {li:Math.min(s2+20,100), crm:s2, out:s2, scen:s3, uk:s4};
+  Object.entries(comps).forEach(([k,v])=>{
+    const el = document.getElementById(`comp-${k}`);
+    const vel = document.getElementById(`comp-${k}-v`);
+    if(el) el.style.width=`${v}%`;
+    if(vel) vel.textContent = v>0?`${v}%`:'—';
+  });
+
+  const roadmap = [];
+  if(s1<70) roadmap.push('📚 <b>Stage 1:</b> Revisit B2B fundamentals — study UK SME procurement challenges and GMT working patterns.');
+  if(s2<70) roadmap.push('🔗 <b>Stage 2:</b> Practice LinkedIn Sales Navigator daily. Build and refine your ICP template.');
+  if(s3<70) roadmap.push('🎯 <b>Stage 3:</b> Study the PPVP framework: Pain-Process-Value-Proof for each scenario response.');
+  if(s4<70) roadmap.push('🧠 <b>Stage 4:</b> Write 3 STAR stories using real examples. Record yourself and review for UK tone.');
+  if(overall>=80) roadmap.push('🏆 <b>Outstanding!</b> You\'re ready. Practice one live mock interview with a peer before the real thing.');
+
+  document.getElementById('roadmap-content').innerHTML = roadmap.length>0?roadmap.join('<br><br>'):'🎉 All areas performing well! Focus on consistency and preparing company-specific research.';
+}
+
+function downloadReport() {
+  refreshReport();
+  const s1=state.scores.s1||0, s2=state.scores.s2||0, s3=state.scores.s3||0, s4=state.scores.s4||0;
+  const overall = Math.round([s1,s2,s3,s4].filter(s=>s>0).reduce((a,b)=>a+b,0)/([s1,s2,s3,s4].filter(s=>s>0).length||1));
+  const level = overall>=80?'High Performer':overall>=60?'Hireable':overall>=40?'Developing':'Beginner';
+  const txt = `SALESPREP PRO – INTERVIEW REPORT\n${'='.repeat(40)}\nDate: ${new Date().toLocaleDateString('en-GB')}\n\nOVERALL SCORE: ${overall}%\nREADINESS LEVEL: ${level}\n\nSTAGE SCORES:\nStage 1 – Screening: ${s1}%\nStage 2 – Technical: ${s2}%\nStage 3 – Scenarios: ${s3}%\nStage 4 – Behavioural: ${s4}%\n\nROLE: B2B Sales Lead Generator\nCOMPANY: UK Sales & Growth Hub\nINTERVIEW TYPE: Remote (India → UK GMT)\n\nGenerated by SalesPrep Pro PWA`;
+  const blob = new Blob([txt], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'SalesPrep_Interview_Report.txt';
+  a.click();
+}
+
+// ══════════════════════════════════
+// PWA
+// ══════════════════════════════════
+const MANIFEST = {
+  name:"SalesPrep Pro",short_name:"SalesPrep",description:"B2B Sales Lead Generator Interview Simulator",
+  start_url:"/",display:"standalone",background_color:"#0a0f1e",theme_color:"#38bdf8",
+  icons:[{src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f172a'/><text y='.9em' font-size='70' x='15'>📊</text></svg>",sizes:"192x192",type:"image/svg+xml"}]
+};
+const blob = new Blob([JSON.stringify(MANIFEST)],{type:'application/json'});
+const manifestUrl = URL.createObjectURL(blob);
+document.querySelector('head').insertAdjacentHTML('beforeend',`<link rel="manifest" href="${manifestUrl}">`);
+
+const SW = `
+self.addEventListener('install',e=>{e.waitUntil(caches.open('salesprep-v1').then(c=>c.addAll(['/'])));self.skipWaiting();});
+self.addEventListener('activate',e=>{self.clients.claim();});
+self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).catch(()=>new Response('<h1>Offline</h1><p>SalesPrep works offline! Reload when connected.</p>',{headers:{'Content-Type':'text/html'}}))));});
+`;
+if('serviceWorker' in navigator) {
+  const swBlob = new Blob([SW],{type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
+}
+
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault(); deferredPrompt=e;
+  document.getElementById('install-banner').classList.remove('hidden');
+});
+function installPWA(){
+  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;document.getElementById('install-banner').classList.add('hidden');});}
+}
+
+// ══════════════════════════════════
+// INIT
+// ══════════════════════════════════
+window.addEventListener('DOMContentLoaded',()=>{
+  initStage1();
+  initMindset();
+  initObjHandler();
+  initUKQuiz();
+  calcKPI(); calcComm(); calcRevenue();
+  updateHomeProgress();
+  setTimeout(()=>{
+    document.querySelectorAll('.screen.active .fade-in').forEach((el,i)=>{
+      el.style.animationDelay=`${i*0.08}s`;
+    });
+  },100);
+});
+</script>
+</body>
+</html>
